@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級經營動力站 v10.1 (穩定版)</title>
+    <link rel="stylesheet" href="../class-manager-shell.css?v=34">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+      :root {
+        --primary-color: #444444; --background-color: #FDFBF8; --card-bg: rgba(255, 255, 255, 0.55);
+        --card-border: rgba(255, 255, 255, 0.4); --text-color-primary: #1d1d1f; --text-color-secondary: #5a5a5f;
+        --input-bg: rgba(235, 235, 240, 0.6); --shadow-color: rgba(0, 0, 0, 0.1); --success-color: #30D158;
+        --danger-color: #FF453A; --warning-color: #FF9F0A; --pending-color: #8E8E93; --control-border-radius: 14px;
+        --gold-color: #FFD700; --silver-color: #C0C0C0; --bronze-color: #CD7F32;
+      }
+      
+      html { font-size: 14.5px; }
+      * { box-sizing: border-box; }
+      body {
+        font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: var(--background-color); color: var(--text-color-primary);
+        margin: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+        perspective: 1200px; overflow-x: hidden;
+      }
+
+      .app-screen { display: none; padding: 0 0 28px; width: min(1500px, calc(100vw - 28px)); margin: 0 auto; min-height: calc(100vh - 104px); }
+      .app-screen.active { display: flex; flex-direction: column; animation: fadeIn 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+      .container { max-width: none; margin: 0 auto; width: 100%; }
+      .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 15px; }
+      h1 { font-weight: 900; font-size: 3em; color: var(--cm-ink); text-shadow: none; transform: none; }
+      h2 { font-weight: 600; color: var(--text-color-primary); margin: 0 0 25px; font-size: 1.8em; }
+      h3 { font-weight: 700; margin: 0; font-size: 1.2em; }
+      
+      .card {
+        background: var(--cm-surface-soft); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
+        border-radius: var(--cm-radius); border: 1px solid var(--cm-border); box-shadow: var(--cm-shadow-soft);
+        padding: 24px; transform-style: flat; transform: none; transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+      .card:hover { transform: none; box-shadow: var(--cm-shadow-soft); border-color: var(--cm-border-strong); }
+      .card > * { transform: none; }
+      
+      button, input, textarea, select { border-radius: var(--control-border-radius) !important; font-family: inherit; border: none; }
+      button { cursor: pointer; transition: all 0.2s ease; }
+      button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+      button:active { transform: translateY(0) scale(0.98); filter: brightness(0.95); }
+      .btn { padding: 12px 25px; font-weight: 600; font-size: 1em; }
+      .btn-primary { background: var(--primary-color); color: white; box-shadow: 0 4px 15px rgba(68, 68, 68, 0.2); }
+      .btn-success { background: var(--success-color); color: white; box-shadow: 0 4px 15px rgba(48, 209, 88, 0.2); }
+      .btn-danger { background: var(--danger-color); color: white; box-shadow: 0 4px 15px rgba(255, 69, 58, 0.2); }
+      .btn-warning { background: var(--warning-color); color: white; box-shadow: 0 4px 15px rgba(255, 159, 10, 0.2); }
+      .btn-glass { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); color: var(--text-color-secondary); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+      .btn-glass:hover { background: rgba(255, 255, 255, 0.4); color: var(--text-color-primary); transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+
+      input, textarea, select { background-color: var(--input-bg); border: 1px solid rgba(0,0,0,0.08); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); padding: 14px 18px; font-size: 1em; width: 100%; transition: all 0.3s ease; -webkit-appearance: none; color: var(--text-color-primary); }
+      
+      #class-dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+      .class-card { cursor: pointer; text-align: center; position: relative; }
+      #add-class-card { border: 2px dashed rgba(0,0,0,0.2); font-size: 3em; display: flex; align-items: center; justify-content: center; color: var(--text-color-secondary); background: transparent; backdrop-filter: none; box-shadow: none; }
+      
+      .class-view-nav { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 25px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: var(--control-border-radius); padding: 5px; border: 1px solid rgba(255,255,255,0.3); }
+      .nav-tab { flex-grow: 1; text-align: center; padding: 12px; color: var(--text-color-secondary); font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
+      .nav-tab.active { background: var(--primary-color); color: white; box-shadow: 0 4px 15px rgba(68, 68, 68, 0.2); }
+      .tab-content { display: none; } .tab-content.active { display: block; animation: fadeIn 0.4s; }
+      .tab-actions { display: flex; justify-content: flex-end; margin-bottom: 25px; flex-wrap: wrap; gap: 10px; }
+      
+      #student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+      .student-card { padding: 20px; position: relative; display: flex; flex-direction: column; align-items: center; }
+      .student-card-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px; }
+      .student-name { font-size: 1.3em; font-weight: 600; }
+      .student-score { font-size: 2.5em; font-weight: 900; color: var(--primary-color); }
+      .score-controls { display: flex; gap: 10px; margin-top: 20px; }
+      .score-btn { width: 48px; height: 48px; font-size: 2em; line-height: 48px; padding: 0; }
+      .ios-feedback { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; font-size: 3.5em; font-weight: 700; color: white; pointer-events: none; opacity: 0; animation: ios-pop 0.6s ease-out; }
+      .ios-feedback-icon { width: 1.5em; height: 1.5em; border-radius: 50%; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+      @keyframes ios-pop { 0% { opacity: 0.9; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.2); } }
+
+      #homework-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+      .homework-card { border-radius: 24px !important; cursor: pointer; }
+      .status-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+      .status-box { background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 10px; font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+      .status-box .count { font-weight: 700; font-size: 1.2em; }
+      #student-checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+      .student-status-item { padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s ease; border: 2px solid; border-radius: var(--control-border-radius); }
+      .s-completed, .s-submitted, .s-needs_correction { color: white; } .s-completed { background-color: var(--success-color); border-color: var(--success-color); } .s-submitted { background-color: var(--primary-color); border-color: var(--primary-color); } .s-needs_correction { background-color: var(--warning-color); border-color: var(--warning-color); } .s-pending { background-color: transparent; border-color: rgba(0,0,0,0.2); color: var(--text-color-secondary); }
+      
+      .group-container { display: grid; grid-template-columns: 300px 1fr; gap: 25px; align-items: start; }
+      .group-column { padding: 20px; position: relative; }
+      .group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+      .group-members { min-height: 150px; border-radius: 10px; padding: 10px; background: rgba(0,0,0,0.05); display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; }
+      .student-chip { background: var(--card-bg); backdrop-filter: blur(10px); padding: 8px; border-radius: 10px; cursor: grab; text-align: center; border: 1px solid var(--card-border); font-size: 0.9em; }
+      #podium-modal .card { max-width: 90%; width: 1200px; }
+      #group-ranking-podium { display: flex; gap: 15px; align-items: flex-end; justify-content: center; min-height: 300px; padding: 20px; }
+      .podium-stand { flex-grow: 1; max-width: 250px; text-align: center; color: white; padding: 20px; border-radius: 15px 15px 0 0; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+      .podium-stand h3 { margin-top: 0; } .podium-stand .score { font-size: 2.5em; font-weight: 900; margin: 10px 0; }
+      .podium-1st { background-color: var(--gold-color); height: 250px; } .podium-2nd { background-color: var(--silver-color); height: 200px; } .podium-3rd { background-color: var(--bronze-color); height: 150px; }
+
+      #grades-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      #grades-table th, #grades-table td { padding: 15px; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.1); }
+      
+      .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; align-items: center; justify-content: center; background: rgba(0,0,0,0.1); opacity: 0; transition: opacity 0.3s ease; }
+      .modal.visible { display: flex; opacity: 1; }
+      
+      .side-tools-container { position: fixed; top: 50%; right: 20px; transform: translateY(-50%); z-index: 1001; display: flex; flex-direction: column; gap: 15px; }
+      .side-tool-btn { width: 60px; height: 60px; font-size: 28px; display: flex; align-items: center; justify-content: center; }
+      .tool-widget { position: fixed; top: 20px; right: 100px; width: 350px; z-index: 1000; opacity: 0; transform: translateX(20px); transition: all 0.3s ease; pointer-events: none; }
+      .tool-widget.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+      #timer-display { font-size: 4em; font-weight: 900; text-align: center; cursor: pointer; }
+      .timer-presets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; }
+      .picker-viewport { height: 60px; overflow: hidden; position: relative; margin: 15px 0; border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
+      .picker-wheel { text-align: center; transition: transform 4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+      .picker-name { font-size: 2em; font-weight: 700; line-height: 60px; }
+      
+      #task-board-modal .card { max-width: 90%; width: 1200px; max-height: 90vh; overflow-y: auto; }
+      .task-board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+      .task-board-item { padding: 20px; } .task-board-item h3 { margin-top: 0; }
+      .task-board-students { display: flex; flex-wrap: wrap; gap: 10px; }
+      .student-task-btn { font-size: 1.2em; font-weight: 700; padding: 10px; min-width: 60px; text-align: center; transition: all 0.3s ease; flex-shrink: 0; }
+      .student-task-btn:hover { transform: scale(1.1); }
+      
+      .creator-credit { position: fixed; bottom: 3px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.1); color: rgba(0, 0, 0, 0.4); padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 500; text-decoration: none; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border: 1px solid rgba(0, 0, 0, 0.05); transition: all 0.3s ease; z-index: 100; }
+      .class-context-bar { width: min(1500px, calc(100vw - 28px)); max-width: none; margin: 14px auto; }
+      .class-context-title { font-weight: 900; }
+      .class-context-meta { color: var(--text-color-secondary); font-size: .9rem; }
+      @media (max-width: 720px) { .class-context-bar { margin: 12px; flex-direction: column; align-items: flex-start; } }
+    </style>
+</head>
+<body class="cm-theme">
+    <div id="class-context-bar" class="class-context-bar"></div>
+    <div id="class-dashboard-screen" class="app-screen active"></div>
+    <div id="class-view-screen" class="app-screen"></div>
+    <div id="add-edit-class-modal" class="modal"></div>
+    <div id="student-modal" class="modal"></div>
+    <div id="add-homework-modal" class="modal"></div>
+    <div id="export-student-modal" class="modal"></div>
+    <div id="task-board-modal" class="modal"></div>
+    <div id="podium-modal" class="modal"></div>
+    
+    <div class="side-tools-container">
+        <button class="side-tool-btn btn-primary" id="open-timer-tool-btn" title="課堂計時器">⏱️</button>
+        <button class="side-tool-btn btn-primary" id="open-picker-tool-btn" title="隨機抽籤">🎲</button>
+    </div>
+    <div id="timer-widget" class="tool-widget card"></div>
+    <div id="picker-widget" class="tool-widget card"></div>
+    
+    <input type="file" id="file-input" style="display: none;" accept=".json">
+    <a href="https://www.facebook.com/FunFun.AI.Teacher/" target="_blank" rel="noopener noreferrer" class="creator-credit">Created by 方方老師</a>
+    <audio id="timer-alarm" src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjQwLjEwMQAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAB/3AAAAAAAQUVDAAAAAA//tAsAQUVDAAAAAAH/3AAAAAAAEVVVDAAAAAA//tA8AQUVDAAAAAA//tBMAQUVDAAAAAAH/3AAAAAAAMVVVDAAAAAA//tB0AQUVDAAAAAA//tCUAQUVDAAAAAAH/3AAAAAAANVVVDAAAAAA//tC8AQUVDAAAAAA//tDcAAAAAAAAAAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//QRA3AAANIAAAAAnRx//tAwRA3AAANIAAAAAnRx//tAsRA3AAANIAAAAAnRx//tA8RA3AAANIAAAAAnRx//tBMAAANIAAAAAnRx//tB0RA3AAANIAAAAAnRx//tCUAANIAAAAAnRx//tC8RA3AAANIAAAAAnRx//tDcRA3AAANIAAAAAnRx//tDkRA3AAANIAAAAAnRx//tEMRA3AAANIAAAAAnRx//tEcRA3AAANIAAAAAnRx//tEsRA3AAANIAAAAAnRx//tFAAAANIAAAAAnRx//tFREAANIAAAAAnRx//tFUAAANIAAAAAnRx//tFkRA3AAANIAAAAAnRx//tF8RA3AAANIAAAAAnRx//tGOAAANIAAAAAnRx//tGREAANIAAAAAnRx//tGUAAANIAAAAAnRx//tGkRA3AAANIAAAAAnRx//tG8RA3AAANIAAAAAnRx//tHOAAANIAAAAAnRx//tHREAAAANIAAAAAnRx//tHUAANIAAAAAnRx//tHkRA3AAANIAAAAAnRx//tH8RA3AAANIAAAAAnRx//tIAD/3/+A8D/3/8D/3//A/9//AP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f/wP/f-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="></audio>
+
+    <script src="../class-manager-data.js?v=35"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- HTML INJECTION ---
+        document.getElementById('class-dashboard-screen').innerHTML = `<div class="container"><div class="header"><h1>班級經營動力站</h1><div style="display: flex; gap: 15px; align-items: center;"><button id="load-data-btn" class="btn btn-glass">載入</button><button id="export-data-btn" class="btn btn-primary">匯出</button></div></div><div id="class-dashboard-grid" class="dashboard-grid"></div></div>`;
+        document.getElementById('class-view-screen').innerHTML = `<div class="container"><div class="header"><h1 id="class-view-title"></h1><button id="back-to-dashboard-btn" class="btn btn-glass">返回總覽</button></div><div class="class-view-nav"><button class="nav-tab active" data-tab="scoring">個人計分</button><button class="nav-tab" data-tab="homework">作業訂正</button><button class="nav-tab" data-tab="grouping">分組模式</button><button class="nav-tab" data-tab="grades">成績結算</button></div><div id="scoring-tab" class="tab-content card"></div><div id="homework-tab" class="tab-content"></div><div id="grouping-tab" class="tab-content card"></div><div id="grades-tab" class="tab-content card"></div></div>`;
+        document.getElementById('add-edit-class-modal').innerHTML = `<div class="card"><h2 id="class-modal-title"></h2><div class="form-group"><label for="class-name-input">班級名稱</label><input type="text" id="class-name-input" placeholder="例如：三年一班"></div><div class="form-group"><label for="student-list-input">學生名單 (人數或名單)</label><textarea id="student-list-input" placeholder="輸入班級總人數 (例如 28)&#10;或&#10;1 王小明&#10;2 陳大華&#10;..."></textarea></div><div class="modal-actions"><button id="delete-class-btn" class="btn btn-danger" style="display: none; margin-right: auto;">刪除班級</button><button id="cancel-class-modal-btn" class="btn btn-glass">取消</button><button id="save-class-btn" class="btn btn-primary">儲存</button></div></div>`;
+        document.getElementById('add-homework-modal').innerHTML = `<div class="card"><h2>新增作業</h2><div class="form-group"><label for="homework-title-input">作業名稱</label><input type="text" id="homework-title-input" placeholder="例如：數學習作 P.30-32"></div><div class="modal-actions"><button id="cancel-add-homework-btn" class="btn btn-glass">取消</button><button id="confirm-add-homework-btn" class="btn btn-primary">確認新增</button></div></div>`;
+        document.getElementById('export-student-modal').innerHTML = `<div class="card"><h2>匯出個別學生報告</h2><div class="form-group"><label for="student-select-dropdown">選擇學生</label><select id="student-select-dropdown"></select></div><div class="form-group"><label for="single-student-export-content">未完成項目</label><textarea id="single-student-export-content" readonly></textarea></div><div class="modal-actions"><button id="copy-single-student-export-btn" class="btn btn-success">複製到剪貼簿</button><button id="close-export-student-modal-btn" class="btn btn-glass">關閉</button></div></div>`;
+        document.getElementById('task-board-modal').innerHTML = `<div class="card" style="max-width: 90%; width: 1200px; max-height: 90vh; overflow-y: auto;"><div class="header" style="margin-bottom: 20px;"><h2>互動任務板</h2><button id="close-task-board-btn" class="btn btn-glass">關閉</button></div><div id="task-board-grid" class="task-board-grid"></div></div>`;
+        document.getElementById('student-modal').innerHTML = `<div class="card"><h2 id="student-modal-title"></h2><div class="form-group"><label for="student-id-input">座號</label><input type="text" id="student-id-input"></div><div class="form-group"><label for="student-name-input">姓名</label><input type="text" id="student-name-input"></div><div class="modal-actions"><button id="delete-student-btn" class="btn btn-danger" style="display: none; margin-right: auto;">刪除學生</button><button id="cancel-student-btn" class="btn btn-glass">取消</button><button id="save-student-btn" class="btn btn-primary">儲存</button></div></div>`;
+        document.getElementById('timer-widget').innerHTML = `<h2>計時器</h2><div id="timer-display">00:00</div><div class="timer-presets"><button class="btn btn-glass" data-minutes="5">5分</button><button class="btn btn-glass" data-minutes="10">10分</button><button class="btn btn-glass" data-minutes="15">15分</button></div><div class="modal-actions" style="justify-content: center; gap: 15px;"><button id="start-pause-timer-btn" class="btn btn-primary">開始</button><button id="reset-timer-btn" class="btn btn-danger">重設</button></div>`;
+        document.getElementById('picker-widget').innerHTML = `<h2>隨機抽籤</h2><div id="picker-source" class="cm-muted" style="font-size:12px;font-weight:800;margin-bottom:10px;"></div><div class="picker-viewport"><div class="picker-wheel"></div></div><div class="modal-actions" style="justify-content: center;"><button id="draw-student-btn" class="btn btn-success">抽籤！</button></div>`;
+        document.getElementById('podium-modal').innerHTML = `<div class="card" style="max-width: 90%; width: 1200px;"><div class="header" style="margin-bottom: 20px;"><h2>小組積分儀表板</h2><button id="close-podium-btn" class="btn btn-glass">關閉</button></div><div id="group-ranking-podium"></div></div>`;
+
+        // --- 1. STATE & CONSTANTS ---
+        const screens = { dashboard: document.getElementById('class-dashboard-screen'), classView: document.getElementById('class-view-screen') };
+        const modals = { class: document.getElementById('add-edit-class-modal'), homework: document.getElementById('add-homework-modal'), studentExport: document.getElementById('export-student-modal'), taskBoard: document.getElementById('task-board-modal'), student: document.getElementById('student-modal'), podium: document.getElementById('podium-modal') };
+        const toolWidgets = { timer: document.getElementById('timer-widget'), picker: document.getElementById('picker-widget') };
+        const STATUS_ORDER = ['pending', 'submitted', 'needs_correction', 'completed'];
+        const STATUS_TEXT = { pending: '未繳交', submitted: '已繳交', needs_correction: '待訂正', completed: '已完成' };
+        let appData = { classes: [] };
+        let currentClassId = null, currentHomeworkId = null, draggedStudentId = null;
+        let timerInterval = null, timeLeftInSeconds = 0, isTimerRunning = false;
+
+        // --- 2. CORE FUNCTIONS (DECLARED FIRST) ---
+        function saveData() {
+            localStorage.setItem('classPowerhouse_v9.4_final', JSON.stringify(appData));
+            if (window.ClassManager) {
+                const managerData = ClassManager.load();
+                managerData.classes = appData.classes;
+                managerData.currentClassId = currentClassId || managerData.currentClassId;
+                ClassManager.save(managerData);
+            }
+        }
+        function loadData() {
+            if (window.ClassManager) {
+                const managerData = ClassManager.load();
+                appData = { classes: managerData.classes || [] };
+                currentClassId = ClassManager.getUrlClassId() || managerData.currentClassId || null;
+            } else {
+                appData = JSON.parse(localStorage.getItem('classPowerhouse_v9.4_final')) || { classes: [] };
+            }
+        }
+        function renderClassContext() {
+            const bar = document.getElementById('class-context-bar');
+            if (!bar) return;
+            const cls = getCurrentClass();
+            if (!cls) {
+                bar.innerHTML = `<a class="cm-button" href="../index.html">← 返回班級管理</a><div><div class="class-context-title cm-title">班級經營動力站</div><div class="class-context-meta">請先從主頁選擇班級，或在此建立班級</div></div>`;
+                return;
+            }
+            const classId = encodeURIComponent(cls.id);
+            bar.innerHTML = `<a class="cm-button" href="../index.html">← 返回班級管理</a><div><div class="class-context-label cm-eyebrow">班級經營動力站</div><div class="class-context-title cm-title">${cls.name}</div><div class="class-context-meta">${cls.students.length} 位學生 · 本機儲存</div></div><nav class="cm-topbar-actions"><a class="cm-button cm-primary" href="./index.html?classId=${classId}">動力站</a><a class="cm-button" href="../黑板/index.html?classId=${classId}">黑板</a><a class="cm-button" href="../座位/index.html?classId=${classId}">座位</a><a class="cm-button" href="../分組系統/index.html?classId=${classId}">分組</a><a class="cm-button cm-exam-mode" href="../考試計時/index.html?classId=${classId}">考試</a></nav>`;
+        }
+        function switchScreen(screenName) { Object.values(screens).forEach(s => s.classList.remove('active')); screens[screenName].classList.add('active'); }
+        function switchTab(tabName) { document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName)); document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `${tabName}-tab`)); }
+        function showModal(modalName) { modals[modalName].classList.add('visible'); }
+        function closeModal(modalName) { modals[modalName].classList.remove('visible'); }
+        function toggleToolWidget(toolName) {
+            Object.entries(toolWidgets).forEach(([name, widget]) => {
+                if (name === toolName) { widget.classList.toggle('active'); } 
+                else { widget.classList.remove('active'); }
+            });
+        }
+        function getCurrentClass() { return appData.classes.find(c => c.id === currentClassId); }
+        
+        // --- 3. RENDER FUNCTIONS ---
+        function renderDashboard() {
+            renderClassContext();
+            const grid = document.getElementById('class-dashboard-grid'); grid.innerHTML = '';
+            appData.classes.forEach(cls => { const card = document.createElement('div'); card.className = 'card class-card'; card.dataset.id = cls.id; card.innerHTML = `<h3>${cls.name}</h3><p>${cls.students.length} 位學生</p>`; grid.appendChild(card); });
+            const addCard = document.createElement('button'); addCard.id = 'add-class-card'; addCard.className = 'card'; addCard.textContent = '+'; grid.appendChild(addCard);
+        }
+        function renderClassView() {
+            const cls = getCurrentClass(); if (!cls) { switchScreen('dashboard'); return; }
+            renderClassContext();
+            document.getElementById('class-view-title').textContent = cls.name;
+            renderScoringTab(cls); renderHomeworkTab(cls); renderGroupingTab(cls); renderGradesTab(cls);
+            switchTab('scoring'); switchScreen('classView');
+        }
+        function renderScoringTab(cls) {
+            const container = document.getElementById('scoring-tab'); container.innerHTML = `<div class="tab-actions"><button id="add-student-btn" class="btn btn-primary">新增學生</button></div><div id="student-grid" class="dashboard-grid"></div>`;
+            const grid = document.getElementById('student-grid');
+            cls.students.sort((a,b) => a.id - b.id).forEach(s => { 
+                const card = document.createElement('div'); card.className = 'card student-card'; card.dataset.studentId = s.id;
+                card.innerHTML = `<div class="student-card-header"><span class="student-name">${s.id}. ${s.name}</span><button class="class-action-btn edit-student-btn" data-student-id="${s.id}">✏️</button></div><div class="student-score">${s.score}</div><div class="score-controls"><button class="btn btn-danger score-btn" data-amount="-1">-</button><button class="btn btn-success score-btn" data-amount="1">+</button></div>`; 
+                grid.appendChild(card);
+            });
+        }
+        function renderHomeworkTab(cls) { currentHomeworkId = null; renderHomeworkList(cls); }
+        function renderHomeworkList(cls) {
+            const container = document.getElementById('homework-tab');
+            container.innerHTML = `<div class="tab-actions"><button id="show-task-board-btn" class="btn btn-warning">互動任務板</button><button id="show-export-student-modal-btn" class="btn btn-glass">匯出學生報告</button><button id="add-homework-btn" class="btn btn-primary">新增作業</button></div><div id="homework-grid" class="dashboard-grid"></div>`;
+            const grid = document.getElementById('homework-grid');
+            if (!cls.homeworks || cls.homeworks.length === 0) { grid.innerHTML = `<p class="card" style="grid-column: 1 / -1; text-align: center; color: var(--text-color-secondary);">這個班級還沒有作業喔！</p>`; return; }
+            cls.homeworks.forEach(hw => {
+                const statuses = hw.studentStatus.reduce((acc, s) => { acc[s.status] = (acc[s.status] || 0) + 1; return acc; }, {});
+                const statusHTML = `
+                    <div class="status-summary">
+                        <div class="status-box"><span style="color: var(--pending-color)">⚫️</span><span>未繳交</span><span class="count">${statuses.pending || 0}</span></div>
+                        <div class="status-box"><span style="color: var(--primary-color)">🔵</span><span>已繳交</span><span class="count">${statuses.submitted || 0}</span></div>
+                        <div class="status-box"><span style="color: var(--warning-color)">🟠</span><span>待訂正</span><span class="count">${statuses.needs_correction || 0}</span></div>
+                        <div class="status-box"><span style="color: var(--success-color)">🟢</span><span>已完成</span><span class="count">${statuses.completed || 0}</span></div>
+                    </div>`;
+                const card = document.createElement('div'); card.className = 'card homework-card'; card.dataset.id = hw.id; card.innerHTML = `<h3>${hw.title}</h3>${statusHTML}`; grid.appendChild(card);
+            });
+        }
+        function renderHomeworkTracking() {
+            const cls = getCurrentClass(), homework = cls.homeworks.find(hw => hw.id === currentHomeworkId); if (!homework) { renderHomeworkList(cls); return; }
+            const container = document.getElementById('homework-tab');
+            container.innerHTML = `<div class="tab-actions"><button id="back-to-homework-list-btn" class="btn btn-glass">返回作業列表</button><button id="delete-homework-btn" class="btn btn-danger">刪除作業</button></div><div class="card"><h2>${homework.title}</h2><div id="student-checklist-grid" class="dashboard-grid"></div></div>`;
+            const grid = document.getElementById('student-checklist-grid');
+            homework.studentStatus.sort((a,b) => a.id - b.id).forEach(s_status => { const s_info = cls.students.find(s => s.id === s_status.id); const item = document.createElement('div'); item.className = `student-status-item s-${s_status.status}`; item.dataset.id = s_status.id; item.innerHTML = `<div>${s_info.name}</div><div class="status">${STATUS_TEXT[s_status.status]}</div>`; grid.appendChild(item); });
+        }
+        function renderGroupingTab(cls) {
+            const container = document.getElementById('grouping-tab'); container.innerHTML = `<div class="tab-actions"><div style="flex-grow:1; display:flex; gap:10px; align-items:center;"><label>組數</label><input type="number" id="group-count-input" value="${cls.groupCount || 4}" style="width: 80px;"></div><button id="show-podium-btn" class="btn btn-warning">顯示積分儀表板</button><button id="random-group-btn" class="btn btn-primary">一鍵隨機分組</button></div><div class="group-container"><div class="card group-column" id="unassigned-students-column"><h3>未分組</h3><div class="group-members" id="unassigned-students"></div></div><div class="groups-area" id="groups-area"></div></div>`;
+            const unassigned = document.getElementById('unassigned-students'), groupsArea = document.getElementById('groups-area'); groupsArea.innerHTML = '';
+            const createChip = s => { const c = document.createElement('div'); c.className = 'student-chip'; c.textContent = `${s.id}. ${s.name}`; c.dataset.studentId = s.id; c.draggable = true; return c; };
+            cls.students.forEach(s => { if (s.group === null || s.group > (cls.groupCount || 4)) unassigned.appendChild(createChip(s)); });
+            for (let i = 1; i <= (cls.groupCount || 4); i++) {
+                const col = document.createElement('div'); col.className = 'card group-column'; col.dataset.groupId = i;
+                col.innerHTML = `<div class="group-header"><h3>第 ${i} 組</h3><div class="score-controls"><button class="btn btn-danger score-btn group-personal" data-amount="-1" title="組員各扣1分">-</button><button class="btn btn-success score-btn group-personal" data-amount="1" title="組員各加1分">+</button><button class="btn btn-warning score-btn group-competition" data-amount="1" title="小組競賽加分" style="font-size: 1.5em;">🏆</button></div></div><div class="group-members"></div>`;
+                cls.students.filter(s => s.group === i).forEach(s => col.querySelector('.group-members').appendChild(createChip(s)));
+                groupsArea.appendChild(col);
+            }
+        }
+        function renderPodiumModal() {
+            const cls = getCurrentClass();
+            const podiumContainer = document.getElementById('podium-modal').querySelector('#group-ranking-podium'); podiumContainer.innerHTML = '';
+            if (!cls.groups || cls.groups.length === 0) { podiumContainer.innerHTML = `<p style="text-align:center; color: var(--text-color-secondary)">尚未設定小組或無小組分數紀錄</p>`; showModal('podium'); return; }
+            const sortedGroups = [...cls.groups].sort((a, b) => b.score - a.score);
+            const podiumClasses = ['podium-1st', 'podium-2nd', 'podium-3rd']; const podiumIcons = ['🥇', '🥈', '🥉'];
+            sortedGroups.slice(0, 3).forEach((group, index) => {
+                const stand = document.createElement('div'); stand.className = `podium-stand ${podiumClasses[index]}`;
+                stand.innerHTML = `<h3>${podiumIcons[index]} 第 ${group.id} 組</h3><div class="score">${group.score}</div>`;
+                podiumContainer.appendChild(stand);
+            });
+            showModal('podium');
+        }
+        function renderGradesTab(cls) {
+            const container = document.getElementById('grades-tab'); container.innerHTML = `<div class="tab-actions"><button id="calculate-grades-btn" class="btn btn-success">結算平時分數</button><button id="export-grades-btn" class="btn btn-primary">匯出Excel</button><button id="reset-scores-btn" class="btn btn-danger">分數重置</button></div><div id="grades-table-container"><table id="grades-table"><thead><tr><th>座號/姓名</th><th>累積淨分</th><th>平時分數</th></tr></thead><tbody></tbody></table></div>`;
+            const tbody = container.querySelector('tbody'); tbody.innerHTML = '';
+            cls.students.sort((a,b) => a.id - b.id).forEach(s => tbody.innerHTML += `<tr><td>${s.id}. ${s.name}</td><td>${s.score}</td><td>${s.grade || '-'}</td></tr>`);
+        }
+        function renderTaskBoard() {
+            const cls = getCurrentClass(); const grid = document.getElementById('task-board-grid'); grid.innerHTML = '';
+            let anyFound = false;
+            cls.homeworks.forEach(hw => {
+                const studentsWithTasks = hw.studentStatus.filter(s => ['pending', 'needs_correction'].includes(s.status));
+                if (studentsWithTasks.length > 0) {
+                    anyFound = true;
+                    const item = document.createElement('div'); item.className = 'card task-board-item';
+                    item.innerHTML = `<h3>${hw.title}</h3>`;
+                    const studentContainer = document.createElement('div'); studentContainer.className = 'task-board-students';
+                    studentsWithTasks.sort((a,b) => a.id - b.id).forEach(s_status => {
+                        const s_info = cls.students.find(s => s.id === s_status.id);
+                        const btn = document.createElement('button');
+                        btn.className = `btn student-task-btn ${s_status.status === 'pending' ? 'is-pending' : 'is-correction'}`;
+                        btn.textContent = s_info.id;
+                        btn.dataset.studentId = s_info.id; btn.dataset.homeworkId = hw.id;
+                        studentContainer.appendChild(btn);
+                    });
+                    item.appendChild(studentContainer); grid.appendChild(item);
+                }
+            });
+            if(!anyFound) grid.innerHTML = `<p class="card" style="grid-column: 1 / -1; text-align:center;">🎉 太棒了！目前沒有任何待辦任務！</p>`;
+            showModal('taskBoard');
+        }
+        
+        // --- 4. BUSINESS LOGIC ---
+        function showAddEditClassModal(classId = null) {
+            const modal = modals.class; modal.dataset.editingId = classId || '';
+            const title = modal.querySelector('#class-modal-title'), nameInput = modal.querySelector('#class-name-input'), listInput = modal.querySelector('#student-list-input'), deleteBtn = modal.querySelector('#delete-class-btn');
+            if (classId) { const cls = appData.classes.find(c => c.id === classId); title.textContent = "編輯班級"; nameInput.value = cls.name; listInput.value = cls.students.map(s => `${s.id} ${s.name}`).join('\n'); deleteBtn.style.display = 'inline-block'; } 
+            else { title.textContent = "新增班級"; nameInput.value = ''; listInput.value = ''; deleteBtn.style.display = 'none'; }
+            showModal('class');
+        }
+        function saveClass() {
+            const modal = modals.class, name = modal.querySelector('#class-name-input').value.trim(), list = modal.querySelector('#student-list-input').value.trim(), editingId = modal.dataset.editingId;
+            if (!name || !list) return alert('班級名稱和學生名單不能為空！');
+            let newStudents = (!list.includes('\n') && !isNaN(parseInt(list))) ? Array.from({length: parseInt(list)}, (_, i) => ({ id: String(i + 1), name: `${i + 1}號` })) : list.split('\n').map(l => { const p = l.trim().split(/\s+/); return p[0] ? { id: p[0], name: p.slice(1).join(' ') || `${p[0]}號` } : null; }).filter(Boolean);
+            if (editingId) {
+                const cls = appData.classes.find(c => c.id === editingId); cls.name = name;
+                cls.students = newStudents.map(ns => { const es = cls.students.find(s => s.id === ns.id); return { ...(es || { score: 0, group: null, grade: null }), ...ns }; });
+            } else { 
+                const students = newStudents.map(s => ({...s, score: 0, group: null, grade: null })); 
+                const groupCount = 4;
+                const groups = Array.from({length: groupCount}, (_, i) => ({id: i+1, score: 0}));
+                appData.classes.push({ id: `C${Date.now()}`, name, students, homeworks: [], groupCount, groups }); 
+            }
+            saveData(); renderDashboard(); closeModal('class');
+        }
+        function showStudentModal(studentId = null) {
+            const modal = modals.student; modal.dataset.editingId = studentId || '';
+            const title = document.getElementById('student-modal-title'), idInput = document.getElementById('student-id-input'), nameInput = document.getElementById('student-name-input'), deleteBtn = document.getElementById('delete-student-btn');
+            if(studentId){
+                title.textContent = "編輯學生"; const student = getCurrentClass().students.find(s=>s.id === studentId);
+                idInput.value = student.id; idInput.disabled = true; nameInput.value = student.name; deleteBtn.style.display = 'inline-block';
+            } else {
+                title.textContent = "新增學生"; idInput.value = ''; idInput.disabled = false; nameInput.value = ''; deleteBtn.style.display = 'none';
+            }
+            showModal('student');
+        }
+        function saveStudent() {
+            const modal = modals.student, studentId = modal.dataset.editingId, id = document.getElementById('student-id-input').value.trim(), name = document.getElementById('student-name-input').value.trim();
+            if(!id || !name) return alert('座號和姓名不能為空！');
+            const cls = getCurrentClass();
+            if(studentId){
+                const student = cls.students.find(s=>s.id === studentId); student.name = name;
+            } else {
+                if(cls.students.some(s=>s.id === id)) return alert('座號重複！');
+                cls.students.push({id, name, score:0, group:null, grade:null});
+                cls.homeworks.forEach(hw => hw.studentStatus.push({id, status:'pending'}));
+            }
+            saveData(); renderScoringTab(cls); closeModal('student');
+        }
+        function deleteStudent() {
+            const studentId = modals.student.dataset.editingId;
+            if(!studentId || !confirm('確定要永久刪除此學生嗎？所有相關紀錄將被清除。')) return;
+            const cls = getCurrentClass();
+            cls.students = cls.students.filter(s => s.id !== studentId);
+            cls.homeworks.forEach(hw => { hw.studentStatus = hw.studentStatus.filter(ss => ss.id !== studentId); });
+            saveData(); renderScoringTab(cls); closeModal('student');
+        }
+        function showScoreFeedback(card, amount) {
+            const feedback = document.createElement('div'); feedback.className = 'ios-feedback';
+            const icon = document.createElement('div'); icon.className = 'ios-feedback-icon';
+            icon.textContent = amount > 0 ? '＋' : '－';
+            icon.style.backgroundColor = `rgba(${amount > 0 ? '48, 209, 88' : '255, 69, 58'}, 0.8)`;
+            feedback.appendChild(icon); card.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 600);
+        }
+        function updateScore(studentId, amount) {
+            const student = getCurrentClass().students.find(s => s.id === studentId);
+            if(student) { 
+                student.score += amount;
+                saveData();
+                const cardElement = document.querySelector(`.student-card[data-student-id="${studentId}"]`);
+                if (cardElement) {
+                    cardElement.querySelector('.student-score').textContent = student.score;
+                }
+            }
+        }
+        function updateGroupPersonalScore(groupId, amount) {
+            const cls = getCurrentClass();
+            cls.students.filter(s => s.group == groupId).forEach(s => { s.score += amount; });
+            saveData(); 
+            renderScoringTab(cls);
+        }
+        function updateGroupCompetitionScore(groupId, amount) {
+            const cls = getCurrentClass();
+            const group = cls.groups.find(g => g.id == groupId);
+            if(group){
+                group.score += amount;
+                saveData();
+            }
+        }
+        function calculateGrades() {
+            const cls = getCurrentClass(); const scores = cls.students.map(s => s.score); const min = Math.min(...scores), max = Math.max(...scores), range = max - min;
+            cls.students.forEach(s => { s.grade = Math.round((range === 0) ? 90 : 80 + ((s.score - min) / range) * 20); });
+            saveData(); renderGradesTab(cls);
+        }
+        function resetScores() { if (confirm('確定重置所有分數？')) { getCurrentClass().students.forEach(s => { s.score = 0; s.grade = null; }); saveData(); renderClassView(); }}
+        function loadAllData(e) { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); if(Array.isArray(data.classes)) { if(confirm("確定載入？將覆蓋現有資料！")) { appData = data; saveData(); renderDashboard(); alert("載入成功！"); } } else alert("檔案格式錯誤。"); } catch { alert("讀取失敗。"); } }; reader.readAsText(file); e.target.value = ''; }
+        function drawStudent() {
+            const pickerWheel = document.getElementById('picker-widget').querySelector('.picker-wheel');
+            const btn = document.getElementById('draw-student-btn');
+            const cls = getCurrentClass();
+            if (!cls || cls.students.length === 0) {
+                pickerWheel.innerHTML = `<div class="picker-name">沒有學生</div>`; return;
+            }
+            document.getElementById('picker-source').textContent = `名單來源：${cls.name}（${cls.students.length} 位）`;
+            btn.disabled = true;
+            const students = [...cls.students];
+            let list = [];
+            for (let i = 0; i < 5; i++) { list = list.concat(students.sort(() => Math.random() - 0.5)); }
+            const winner = students[Math.floor(Math.random() * students.length)];
+            list.splice(list.length - 5, 0, winner);
+
+            pickerWheel.innerHTML = list.map(s => `<div class="picker-name">${s.name}</div>`).join('');
+            pickerWheel.style.transition = 'none';
+            pickerWheel.style.transform = 'translateY(0)';
+            
+            setTimeout(() => {
+                pickerWheel.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                const winnerIndex = list.lastIndexOf(winner);
+                const nameHeight = pickerWheel.firstChild.offsetHeight;
+                const position = (winnerIndex * nameHeight) - (pickerWheel.parentElement.offsetHeight / 2) + (nameHeight / 2);
+                pickerWheel.style.transform = `translateY(-${position}px)`;
+                
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = "再抽一位";
+                }, 4000);
+            }, 100);
+        }
+        function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timeLeftInSeconds = 0; updateTimerDisplay(); const btn = document.getElementById('start-pause-timer-btn'); btn.textContent = '開始'; btn.classList.remove('btn-warning'); btn.classList.add('btn-primary'); }
+        function updateTimerDisplay() { const mins = Math.floor(timeLeftInSeconds/60).toString().padStart(2,'0'); const secs = (timeLeftInSeconds%60).toString().padStart(2,'0'); document.getElementById('timer-display').textContent = `${mins}:${secs}`; }
+        function startPauseTimer() { 
+            if (timeLeftInSeconds <= 0) return;
+            const btn = document.getElementById('start-pause-timer-btn'); 
+            isTimerRunning = !isTimerRunning; 
+            if(isTimerRunning){ 
+                btn.textContent='暫停'; btn.classList.replace('btn-primary','btn-warning'); 
+                timerInterval = setInterval(() => { 
+                    timeLeftInSeconds--; updateTimerDisplay(); 
+                    if(timeLeftInSeconds<=0){ 
+                        clearInterval(timerInterval); 
+                        document.getElementById('timer-alarm').play();
+                        alert('時間到！'); 
+                        resetTimer();
+                    }
+                }, 1000); 
+            } else { 
+                clearInterval(timerInterval); 
+                btn.textContent='繼續'; 
+                btn.classList.replace('btn-warning','btn-primary'); 
+            } 
+        }
+
+        // --- 5. EVENT LISTENERS ---
+        document.body.addEventListener('click', (e) => {
+            const target = e.target;
+            const closest = (selector) => target.closest(selector);
+            
+            // --- Direct ID clicks ---
+            const buttonId = target.id || (closest('.btn') && closest('.btn').id);
+            if(buttonId) {
+                const actions = {
+                    'add-class-card': () => showAddEditClassModal(), 'back-to-dashboard-btn': () => switchScreen('dashboard'),
+                    'add-homework-btn': () => showModal('homework'), 'show-task-board-btn': renderTaskBoard,
+                    'back-to-homework-list-btn': () => renderHomeworkList(getCurrentClass()), 'delete-homework-btn': () => { if (confirm('確定刪除作業？')) { const cls = getCurrentClass(); cls.homeworks = cls.homeworks.filter(hw => hw.id !== currentHomeworkId); saveData(); renderHomeworkList(cls); } },
+                    'random-group-btn': () => { const cls = getCurrentClass(); const shuffled = [...cls.students].sort(() => 0.5 - Math.random()); shuffled.forEach((s, i) => s.group = (i % cls.groupCount) + 1); saveData(); renderGroupingTab(cls); },
+                    'calculate-grades-btn': calculateGrades, 'reset-scores-btn': resetScores,
+                    'export-grades-btn': () => { let tsv = "姓名\t淨分\t平時分數\n"; getCurrentClass().students.forEach(s => { tsv += `${s.name}\t${s.score}\t${s.grade || '-'}\n`; }); navigator.clipboard.writeText(tsv).then(() => alert('成績已複製！')); },
+                    'save-class-btn': saveClass, 'delete-class-btn': () => { const id = modals.class.dataset.editingId; if (confirm('確定刪除班級？')) { appData.classes = appData.classes.filter(c => c.id !== id); saveData(); renderDashboard(); closeModal('class'); } },
+                    'cancel-class-modal-btn': () => closeModal('class'),
+                    'confirm-add-homework-btn': () => { const title = document.getElementById('homework-title-input').value.trim(); if (!title) return; const cls = getCurrentClass(); cls.homeworks.unshift({ id: `H${Date.now()}`, title, date: new Date().toLocaleDateString('zh-TW'), studentStatus: cls.students.map(s => ({ id: s.id, status: 'pending' })) }); saveData(); renderHomeworkList(cls); closeModal('homework'); },
+                    'cancel-add-homework-btn': () => closeModal('homework'), 'export-data-btn': () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(appData)], {type:'application/json'})); a.download = `班級動力站_備份_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href); },
+                    'load-data-btn': () => document.getElementById('file-input').click(),
+                    'show-export-student-modal-btn': () => { const cls = getCurrentClass(); const dd = document.getElementById('student-select-dropdown'); dd.innerHTML = '<option value="">-- 請選擇學生 --</option>'; cls.students.sort((a,b)=>a.id-b.id).forEach(s => dd.innerHTML += `<option value="${s.id}">${s.id}. ${s.name}</option>`); document.getElementById('single-student-export-content').value = ''; showModal('studentExport'); },
+                    'copy-single-student-export-btn': () => { document.getElementById('single-student-export-content').select(); document.execCommand('copy'); alert('已複製！'); },
+                    'close-export-student-modal-btn': () => closeModal('studentExport'),
+                    'open-timer-tool-btn': () => toggleToolWidget('timer'), 'open-picker-tool-btn': () => toggleToolWidget('picker'),
+                    'start-pause-timer-btn': startPauseTimer, 'reset-timer-btn': resetTimer, 'draw-student-btn': drawStudent,
+                    'add-student-btn': () => showStudentModal(), 'save-student-btn': saveStudent, 'cancel-student-btn': () => closeModal('student'),
+                    'delete-student-btn': deleteStudent, 'close-task-board-btn': () => { closeModal('taskBoard'); renderHomeworkList(getCurrentClass()); },
+                    'show-podium-btn': renderPodiumModal, 'close-podium-btn': () => closeModal('podium'),
+                };
+                if(actions[buttonId]) { actions[buttonId](); return; }
+            }
+            
+            if (closest('.edit-class-btn')) { e.stopPropagation(); showAddEditClassModal(closest('.class-card').dataset.id); }
+            else if (closest('.class-card')) { currentClassId = closest('.class-card').dataset.id; if (window.ClassManager) ClassManager.setCurrentClassId(currentClassId); renderClassView(); }
+            else if (closest('.nav-tab')) { switchTab(closest('.nav-tab').dataset.tab); }
+            else if (closest('.score-btn')) { 
+                const amount = parseInt(closest('.score-btn').dataset.amount);
+                const groupCard = closest('.group-column');
+                const studentCard = closest('.student-card');
+                if (groupCard) {
+                    const groupId = groupCard.dataset.groupId;
+                    if(closest('.score-btn').classList.contains('group-personal')){ updateGroupPersonalScore(groupId, amount); } 
+                    else if (closest('.score-btn').classList.contains('group-competition')) { updateGroupCompetitionScore(groupId, amount); }
+                    showScoreFeedback(groupCard, amount);
+                } else if (studentCard) {
+                    updateScore(studentCard.dataset.studentId, amount); 
+                    showScoreFeedback(studentCard, amount);
+                }
+            }
+            else if (closest('.edit-student-btn')) { e.stopPropagation(); showStudentModal(closest('.student-card').dataset.studentId); }
+            else if (closest('.homework-card')) { currentHomeworkId = closest('.homework-card').dataset.id; renderHomeworkTracking(); }
+            else if (closest('.student-status-item')) { const hw = getCurrentClass().homeworks.find(h => h.id === currentHomeworkId); const s = hw.studentStatus.find(s => s.id === closest('.student-status-item').dataset.id); if(s){ s.status = STATUS_ORDER[(STATUS_ORDER.indexOf(s.status)+1)%4]; saveData(); renderHomeworkTracking(); }}
+            else if (closest('.timer-presets .btn')) { timeLeftInSeconds = parseInt(closest('.btn').dataset.minutes) * 60; updateTimerDisplay(); }
+            else if (target.id === 'timer-display') { const time = prompt('請輸入時間 (分:秒)，例如 5:30', '5:00'); if(time && time.includes(':')) { const parts = time.split(':'); timeLeftInSeconds = (parseInt(parts[0])*60) + parseInt(parts[1]); updateTimerDisplay(); } }
+            else if (closest('.student-task-btn')) {
+                const { studentId, homeworkId } = closest('.student-task-btn').dataset;
+                const cls = getCurrentClass(); const student = cls.students.find(s => s.id === studentId);
+                const homework = cls.homeworks.find(hw => hw.id === homeworkId); const status = homework.studentStatus.find(s => s.id === studentId);
+                if(confirm(`${student.name}，確定要完成「${homework.title}」嗎？`)){
+                    status.status = status.status === 'pending' ? 'submitted' : 'completed';
+                    saveData(); renderTaskBoard();
+                }
+            }
+            else if(!closest('.side-tools-container') && !closest('.tool-widget')) { Object.values(toolWidgets).forEach(w => w.classList.remove('active')); }
+        });
+        
+        document.getElementById('file-input').addEventListener('change', (e) => loadAllData(e));
+        document.getElementById('student-select-dropdown').addEventListener('change', () => { const id = document.getElementById('student-select-dropdown').value; const ta = document.getElementById('single-student-export-content'); if(!id) {ta.value=''; return;} const cls = getCurrentClass(), si = cls.students.find(s=>s.id===id); let tasks = []; cls.homeworks.forEach(hw => { const ss = hw.studentStatus.find(s=>s.id===id); if(['pending', 'needs_correction'].includes(ss.status)) tasks.push(`- ${hw.title} (${STATUS_TEXT[ss.status]})`); }); ta.value = `--- ${si.name} 的未完成項目 ---\n\n` + (tasks.length ? tasks.join('\n') : "🎉 恭喜！沒有未完成項目！"); });
+        document.addEventListener('change', (e) => { if(e.target.id === 'group-count-input') { const cls = getCurrentClass(); cls.groupCount = parseInt(e.target.value); cls.groups = Array.from({length: cls.groupCount}, (_, i) => ({id: i+1, score: 0})); saveData(); renderGroupingTab(cls); }});
+        document.addEventListener('dragstart', (e) => { if(e.target.matches('.student-chip')) draggedStudentId = e.target.dataset.studentId; });
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => { const col = e.target.closest('.group-column, #unassigned-students-column'); if(col) { const gId = col.id==='unassigned-students-column' ? null : parseInt(col.dataset.groupId); const s = getCurrentClass().students.find(st=>st.id===draggedStudentId); if(s) {s.group=gId; saveData(); renderGroupingTab(getCurrentClass());}}});
+        
+        // --- INIT ---
+        loadData();
+        if (currentClassId && getCurrentClass()) {
+            renderClassView();
+        } else {
+            renderDashboard();
+            switchScreen('dashboard');
+        }
+    });
+    </script>
+</body>
+</html>

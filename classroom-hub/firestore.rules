@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isClassManagerBackup() {
+      return request.resource.data.keys().hasOnly([
+        "schema",
+        "ownerUid",
+        "savedAt",
+        "updatedAt",
+        "payload",
+        "usage"
+      ])
+      && request.resource.data.schema == "classManagerCloudBackup_v1"
+      && request.resource.data.ownerUid == request.auth.uid
+      && request.resource.data.savedAt is string
+      && request.resource.data.payload is map
+      && request.resource.data.payload.schema == "classManagerFirebaseDraft_v1"
+      && request.resource.data.payload.algorithm in ["gzip-base64", "plain-base64"]
+      && request.resource.data.payload.data is string
+      && request.resource.data.payload.data.size() < 900000
+      && request.resource.data.payload.originalSize is int
+      && request.resource.data.payload.originalSize < 8000000
+      && request.resource.data.payload.compressedSize is int
+      && request.resource.data.payload.compressedSize < 900000
+      && (
+        request.resource.data.usage == null
+        || (
+          request.resource.data.usage is map
+          && request.resource.data.usage.count is int
+          && request.resource.data.usage.count >= 0
+          && request.resource.data.usage.count <= 3
+          && request.resource.data.usage.date is string
+        )
+      );
+    }
+
+    match /users/{uid}/classManager/main {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid) && isClassManagerBackup();
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
