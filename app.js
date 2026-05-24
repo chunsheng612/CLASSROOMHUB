@@ -460,6 +460,7 @@
       return stored !== null ? stored : DEFAULT_TODO;
     });
     var blackboardTodoText = _bbTodo[0], setBlackboardTodoText = _bbTodo[1];
+    var _hz = useState(false); var hideZhuyin = _hz[0], setHideZhuyin = _hz[1];
 
     var _fm = useState(0.8); var fsMult = _fm[0], setFsMult = _fm[1];
     var _ch = useState(1.55); var cellHMult = _ch[0], setCellHMult = _ch[1];
@@ -1608,6 +1609,10 @@
                 h(Slider, { label: "中文大小", min: 0.5, max: 1.8, step: 0.05, value: fsMult, onChange: setFsMult, display: Math.round(fsMult * 100) + "%" }),
                 h(Slider, { label: "行高字距", min: 1.2, max: 2.8, step: 0.05, value: cellHMult, onChange: setCellHMult, display: cellHMult.toFixed(2) + "×" }),
                 h(Slider, { label: "直欄間距", min: 0, max: 0.5, step: 0.02, value: colGapMult, onChange: setColGapMult, display: Math.round(colGapMult * 100) + "%" }),
+                h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" } },
+                  h("span", { style: { fontSize: "12px", color: "var(--manager-muted)", fontWeight: 600 } }, "隱藏注音顯示"),
+                  h(Toggle, { value: hideZhuyin, onChange: function() { setHideZhuyin(!hideZhuyin); } })
+                ),
                 h(Slider, { label: "注音大小", min: 0.22, max: 0.52, step: 0.01, value: zyScale, onChange: setZyScale, display: Math.round(zyScale * 100) + "%" }),
                 h(Slider, { label: "注音間距", min: 0.5, max: 1.5, step: 0.05, value: zySpacing, onChange: setZySpacing, display: zySpacing.toFixed(2) + "em" }),
                 h(Slider, { label: "注音擠壓", min: 0, max: 0.3, step: 0.01, value: zySqueeze, onChange: setZySqueeze, display: zySqueeze.toFixed(2) }),
@@ -1617,6 +1622,7 @@
                   onClick: function() {
                     setFsMult(0.8); setCellHMult(1.55); setZyScale(0.35);
                     setZySpacing(1.1); setZySqueeze(0.1); setColGapMult(0.18);
+                    setHideZhuyin(false);
                   }
                 }, "↺ 重設為預設值")
               )
@@ -1634,9 +1640,14 @@
             ),
             h("div", {
               ref: bbRef,
-              className: "blackboard-bg",
+              className: "blackboard-bg" + (hideZhuyin ? " hide-zhuyin" : ""),
               style: { width: "100%", aspectRatio: "16/9", position: "relative", borderRadius: "20px", overflow: "hidden", boxShadow: "inset 0 0 40px rgba(0,0,0,0.5)" }
             },
+              h("button", {
+                className: "btn-fullscreen cm-button",
+                style: { position: "absolute", top: "12px", right: "140px", zIndex: 10, background: "rgba(0,0,0,0.4)", color: "#fff", border: "none", borderRadius: "8px", padding: "6px 12px", cursor: "pointer" },
+                onClick: function() { setHideZhuyin(!hideZhuyin); }
+              }, hideZhuyin ? "👁 顯示注音" : "🙈 隱藏注音"),
               h("button", {
                 className: "btn-fullscreen cm-button",
                 style: { position: "absolute", top: "12px", right: "12px", zIndex: 10, background: "rgba(0,0,0,0.4)", color: "#fff", border: "none", borderRadius: "8px", padding: "6px 12px", cursor: "pointer" },
