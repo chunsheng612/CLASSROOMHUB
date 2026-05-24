@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧座位表產生器 v10.9 (流程優化版)</title>
+    <link rel="stylesheet" href="../class-manager-shell.css?v=34">
+    <link rel="stylesheet" href="style.css?v=31">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="cm-theme">
+    <div id="particles-js"></div>
+    <div id="class-context-bar" class="class-context-bar"></div>
+
+    <div class="container">
+        <header>
+            <h1>智慧座位表產生器</h1>
+            <p>v10.9 - 流程優化版</p>
+        </header>
+
+        <main>
+            <div class="seating-chart-container">
+                <div class="layout-controls"><div id="individual-layout-options" class="layout-options-group"><label><input type="radio" name="individual_layout" value="traditional" checked> 傳統網格</label><label><input type="radio" name="individual_layout" value="neighbor_pairing"> 鄰座快速分組</label></div><div id="group-layout-options" class="layout-options-group"><label><input type="radio" name="group_layout" value="pod" checked> 小組團塊</label><label><input type="radio" name="group_layout" value="column"> 直向分組</label></div><div id="traditional-layout-settings"><label>行: <input type="number" id="rows-input" value="5" min="1"></label><label>列: <input type="number" id="cols-input" value="6" min="1"></label></div></div>
+                <div id="seat-map-wrapper"><div class="front-of-class">講台</div><div id="seat-map"></div></div>
+                <button id="export-btn" class="main-action-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg> 匯出座位表 (HTML)</button>
+            </div>
+
+            <div class="controls-panel" id="controls-panel">
+                <div id="step-1" class="step active"><h2>第一步：建立學生名單</h2><textarea id="student-list-input" placeholder="請貼上學生名單，每行一個姓名，或用逗號、空格分隔。"></textarea><div class="quick-generate"><input type="number" id="student-count-input" placeholder="或輸入學生總數快速生成" min="1"><button id="generate-by-count-btn">生成座號</button></div><button id="confirm-students-btn" class="nav-btn">確認名單</button><div id="student-list-preview" class="student-list-container"><h3>待安排學生 (<span id="pending-student-count">0</span>)</h3><ul id="pending-student-list"></ul></div></div>
+                <div id="step-2" class="step"><h2>第二步：選擇排座模式</h2><div class="mode-selection"><button class="mode-btn" data-mode="individual"><span class="icon">👤</span><h3>個人座位</h3><p>適用於傳統教學、考試等情境。</p></button><button class="mode-btn" data-mode="group"><span class="icon">👥</span><h3>分組座位</h3><p>適用於專題報告、合作學習等情境。</p></button></div></div>
+                
+                <!-- UPDATED: Step 3 is refactored -->
+                <div id="step-3" class="step">
+                    <h2>第三步：設定條件</h2>
+                    <!-- Group Mode Settings -->
+                    <div id="group-mode-settings" class="settings-panel">
+                        <div class="group-controls"><label for="group-count-input">要分成幾組？</label><input type="number" id="group-count-input" value="6" min="2"><button id="auto-group-btn">智慧分組</button></div>
+                        
+                        <div id="group-rules-engine" class="rules-engine">
+                            <h5>分組規則 (影響智慧分組)</h5>
+                            <div id="group-rules-list" class="rules-list"></div>
+                            <div class="rule-builder">
+                                <select id="group-rule-type">
+                                    <option value="group_together">必須同組</option>
+                                    <option value="group_apart">不可同組</option>
+                                </select>
+                                <div id="group-rule-options"></div>
+                                <button id="add-group-rule-btn">+</button>
+                            </div>
+                        </div>
+
+                        <div id="group-setup-area"></div>
+                    </div>
+
+                    <!-- Individual Mode Settings -->
+                    <div id="individual-mode-settings" class="settings-panel">
+                        <h4>學生標籤</h4>
+                        <div id="student-tagging-list" class="student-list-container"></div>
+                        
+                        <div id="seating-rules-engine" class="rules-engine">
+                            <h5>座位規則 (影響智慧排座)</h5>
+                            <div id="seating-rules-list" class="rules-list"></div>
+                            <div class="rule-builder">
+                                <select id="seating-rule-type">
+                                    <option value="near">座位靠近</option>
+                                    <option value="far">座位遠離</option>
+                                    <option value="position">指定位置</option>
+                                </select>
+                                <div id="seating-rule-options"></div>
+                                <button id="add-seating-rule-btn">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-4" class="step"><h2>第四步：智慧排座</h2><p>所有設定已完成！請選擇教室佈局，然後點擊按鈕開始排座。</p><button id="generate-seating-btn" class="main-action-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.032zM6.374 8.5H13.5L8.107 2.11 6.374 8.5z"/></svg> 一鍵智慧排座</button><div id="generation-summary"></div></div>
+                <div class="step-navigation"><button id="back-btn" class="nav-btn">上一步</button><button id="next-btn" class="nav-btn">下一步</button></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="tag-modal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="tag-modal-student-name"></h3><div id="tag-options"></div><div class="custom-tag-creator"><input type="text" id="custom-tag-input" placeholder="輸入自訂標籤名稱"><button id="add-custom-tag-btn">新增標籤</button></div></div></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="../class-manager-data.js?v=35"></script>
+    <script src="script.js?v=31"></script>
+</body>
+</html>

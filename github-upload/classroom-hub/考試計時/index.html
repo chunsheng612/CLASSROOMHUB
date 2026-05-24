@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>考試計時系統</title>
+  <link rel="stylesheet" href="../liquid-glass-theme.css" />
+  <link rel="stylesheet" href="../class-manager-shell.css?v=34" />
+  <style>
+    * { box-sizing: border-box; min-width: 0; }
+    html, body { min-height: 100%; margin: 0; }
+    body.light-mode.cm-theme {
+      overflow-x: hidden;
+      background-image:
+        linear-gradient(115deg, rgba(255,255,255,0.74), rgba(255,255,255,0.2) 48%, rgba(247,244,239,0.72)),
+        url("../assets/exam-liquid-glass-bg.png") !important;
+      background-size: cover !important;
+      background-position: center !important;
+      background-attachment: fixed !important;
+    }
+    body::after {
+      background:
+        linear-gradient(120deg, rgba(255,255,255,0.42), transparent 36%),
+        linear-gradient(to bottom, rgba(247,244,239,0.14), rgba(247,244,239,0.46)) !important;
+    }
+    .exam-page { width: min(1380px, calc(100vw - 28px)); margin: 14px auto 28px; display: grid; gap: 14px; }
+    .class-context-bar { flex-wrap: wrap; overflow: visible; container-type: inline-size; }
+    .class-context-bar > div { min-width: min(280px, 100%); }
+    .class-context-bar .cm-title { font-size: clamp(1.45rem, 5cqw, 2.35rem); overflow-wrap: anywhere; }
+    .class-context-bar .cm-topbar-actions { flex: 1 1 420px; min-width: min(100%, 320px); }
+    .class-context-bar .cm-button { white-space: nowrap; }
+    .exam-workspace { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 14px; align-items: start; }
+    .exam-workspace > * { min-width: 0; }
+    .exam-panel { padding: clamp(14px, 2.4cqw, 18px); display: grid; gap: 16px; container-type: inline-size; }
+    .exam-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .exam-field { display: grid; gap: 6px; }
+    .exam-field label { color: var(--cm-muted); font-size: 12px; font-weight: 900; }
+    .exam-field input, .exam-field select, .exam-field textarea { min-height: 42px; padding: 10px 12px; }
+    .exam-field textarea { resize: vertical; line-height: 1.6; }
+    .exam-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .exam-options { display: grid; gap: 10px; }
+    .exam-launch-panel { align-self: start; position: sticky; top: 14px; }
+    .exam-compose-grid { display: grid; grid-template-columns: minmax(300px, 0.98fr) minmax(260px, 0.72fr); gap: 14px; align-items: stretch; }
+    .exam-builder-card, .exam-note-card { padding: 16px; display: grid; gap: 14px; align-content: start; }
+    .exam-note-card {
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.78), rgba(255,255,255,0.42)),
+        radial-gradient(circle at 92% 12%, rgba(199,131,75,0.18), transparent 34%) !important;
+    }
+    .exam-note-card textarea {
+      min-height: 168px;
+      max-height: 260px;
+      font-size: 15px;
+      background: rgba(255,255,255,0.72);
+    }
+    .exam-section-card { padding: 16px; display: grid; gap: 12px; }
+    .exam-section-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .exam-section-head h2 { margin: 0; }
+    .exam-hint { color: var(--cm-muted); font-size: 12px; font-weight: 800; line-height: 1.55; }
+    .mode-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mode-card {
+      min-height: 92px;
+      padding: 14px;
+      border-radius: 18px;
+      display: grid;
+      align-content: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.48);
+      border: 1px solid var(--cm-border);
+      color: var(--cm-muted);
+      cursor: pointer;
+      transition: transform 0.22s var(--cm-motion), background 0.22s ease, box-shadow 0.22s ease;
+      animation: examCardIn 0.42s var(--cm-motion) both;
+    }
+    .mode-card input { position: absolute; opacity: 0; pointer-events: none; }
+    .mode-card strong { color: var(--cm-ink); font-size: 18px; }
+    .mode-card span { font-size: 12px; font-weight: 800; line-height: 1.45; }
+    .mode-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.76); }
+    .mode-card.is-active {
+      background: linear-gradient(135deg, rgba(46,117,108,0.16), rgba(255,255,255,0.78));
+      border-color: rgba(46,117,108,0.28);
+      box-shadow: 0 18px 42px rgba(46,117,108,0.12);
+    }
+    .mode-card.is-active strong { color: var(--cm-accent); }
+    .exam-toggle {
+      min-height: 48px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.52);
+      border: 1px solid var(--cm-border);
+      color: var(--cm-ink);
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .exam-toggle input { width: 20px; height: 20px; margin: 0; accent-color: var(--cm-accent); }
+    .exam-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .exam-actions > * { flex: 1; }
+    .schedule-list, .history-list { display: grid; gap: 10px; max-height: clamp(190px, 34dvh, 330px); overflow: auto; padding-right: 4px; overscroll-behavior: contain; }
+    .schedule-item, .history-item {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.58);
+      border: 1px solid var(--cm-border);
+      transition: transform 0.2s var(--cm-motion), background 0.2s ease;
+    }
+    .schedule-item:hover, .history-item:hover { transform: translateY(-2px); background: rgba(255,255,255,0.86); }
+    .schedule-item.active { color: var(--cm-ink); background: linear-gradient(135deg, rgba(255,255,255,0.86), rgba(46,117,108,0.14)); border-color: rgba(46,117,108,0.28); }
+    .schedule-item.past { opacity: 0.55; }
+    .schedule-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .schedule-clock {
+      width: clamp(82px, 15cqw, 96px);
+      padding: 8px 10px;
+      border-radius: 14px;
+      display: grid;
+      gap: 2px;
+      text-align: center;
+      background: rgba(255,255,255,0.64);
+      border: 1px solid rgba(255,255,255,0.7);
+      color: var(--cm-accent);
+      font-family: Inter, ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 900;
+    }
+    .schedule-clock span { color: var(--cm-muted); font-size: 12px; }
+    .schedule-clock strong { white-space: nowrap; }
+    .schedule-item.active .schedule-clock { color: var(--cm-accent); background: rgba(255,255,255,0.68); border-color: rgba(46,117,108,0.22); }
+    .schedule-item.active .schedule-clock span { color: rgba(255,255,255,0.76); }
+    .schedule-body { min-width: 0; display: grid; gap: 4px; }
+    .schedule-subject { font-size: clamp(18px, 2.2vw, 26px); line-height: 1.15; font-weight: 900; color: var(--cm-ink); }
+    .schedule-item.active .schedule-subject { color: var(--cm-ink); }
+    .schedule-status {
+      justify-self: end;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.64);
+      border: 1px solid rgba(255,255,255,0.7);
+      color: var(--cm-muted);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .schedule-item.active .schedule-status { color: var(--cm-accent); background: rgba(255,255,255,0.68); border-color: rgba(46,117,108,0.22); }
+    .schedule-time, .history-meta { color: var(--cm-muted); font-size: 12px; font-weight: 800; }
+    .schedule-item.active .schedule-time { color: rgba(255,255,255,0.78); }
+    .delete-exam { min-height: 30px; padding: 4px 10px !important; }
+    .schedule-delete-row { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+    .history-item { grid-template-columns: 1fr; }
+    .countdown-board {
+      min-height: min(760px, calc(100dvh - 126px));
+      padding: clamp(12px, 2.2vw, 22px);
+      display: grid;
+      grid-template-columns: minmax(270px, 330px) minmax(0, 1fr);
+      gap: clamp(12px, 2vw, 18px);
+      overflow: hidden;
+      position: relative;
+      animation: examBoardIn 0.46s var(--cm-motion) both;
+    }
+    .countdown-board::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background: linear-gradient(105deg, transparent 0 34%, rgba(255,255,255,0.34) 46%, transparent 58% 100%);
+      transform: translateX(-110%);
+      animation: examGlassSweep 8s ease-in-out infinite;
+    }
+    .board-left, .board-main { padding: clamp(12px, 2cqw, 18px); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .board-left .schedule-list { flex: 1; min-height: 0; max-height: none; }
+    .board-main { align-items: center; justify-content: center; text-align: center; gap: clamp(14px, 3cqw, 22px); container-type: inline-size; }
+    .digital-time { max-width: 100%; font-family: Inter, var(--cm-font); font-size: clamp(3rem, 13cqw, 5.8rem); line-height: 1; font-weight: 900; color: var(--cm-ink); white-space: nowrap; }
+    .next-label { color: var(--cm-muted); font-size: clamp(1.1rem, 4cqw, 1.8rem); font-weight: 900; }
+    .next-subject { max-width: 100%; font-size: clamp(2.6rem, 13cqw, 7.2rem); line-height: 1.02; font-weight: 900; color: var(--cm-accent); overflow-wrap: anywhere; }
+    .timer-huge {
+      width: min(760px, 100%);
+      max-width: 100%;
+      padding: clamp(18px, 4cqw, 26px);
+      border-radius: 30px;
+      color: var(--cm-ink);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.88), rgba(255,255,255,0.56)),
+        radial-gradient(circle at 86% 20%, rgba(46,117,108,0.12), transparent 40%);
+      border: 1px solid var(--cm-border);
+      box-shadow: 0 24px 70px rgba(111, 78, 55, 0.14);
+      font-family: Inter, ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: clamp(3rem, 15.5cqw, 9.2rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      overflow: hidden;
+    }
+    .note-board {
+      width: min(920px, 100%);
+      max-height: clamp(92px, 20dvh, 168px);
+      overflow: auto;
+      padding: 14px 18px 14px 54px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.78), rgba(255,255,255,0.52)),
+        radial-gradient(circle at 8% 20%, rgba(199,131,75,0.18), transparent 30%);
+      border: 1px solid var(--cm-border);
+      color: var(--cm-ink);
+      font-size: clamp(16px, 3.3cqw, 25px);
+      line-height: 1.42;
+      font-weight: 900;
+      box-shadow: 0 18px 56px rgba(77, 53, 40, 0.1);
+      text-align: left;
+      position: relative;
+    }
+    .note-board::before {
+      content: "叮嚀";
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      writing-mode: vertical-rl;
+      color: var(--cm-accent);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      opacity: 0.82;
+    }
+    .attendance-capsule {
+      display: inline-flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.58);
+      border: 1px solid var(--cm-border);
+      color: var(--cm-muted);
+      font-weight: 900;
+    }
+    .clock { width: 186px; height: 186px; border-radius: 50%; margin: 18px auto 4px; position: relative; background: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.7); box-shadow: inset 0 0 26px rgba(70,49,35,0.12); }
+    .marker { position: absolute; left: 50%; top: 7px; width: 2px; height: 10px; margin-left: -1px; background: rgba(111,78,55,0.42); transform-origin: 50% 86px; }
+    .marker.thick { width: 4px; height: 15px; margin-left: -2px; background: var(--cm-accent); }
+    .hand { position: absolute; top: 50%; right: 50%; transform-origin: 100%; border-radius: 999px; background: var(--cm-ink); transform: rotate(90deg); }
+    .hand.hour { width: 30%; height: 6px; }
+    .hand.minute { width: 40%; height: 4px; }
+    .hand.second { width: 45%; height: 2px; background: var(--cm-warm); }
+    .clock-center { position: absolute; inset: 50% auto auto 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--cm-accent); transform: translate(-50%, -50%); }
+    .mode-actions { position: sticky; bottom: 14px; z-index: 10; display: flex; justify-content: flex-end; gap: 10px; padding-top: 10px; }
+    .mode-actions .cm-button { background: rgba(255,255,255,0.82) !important; }
+    .is-countdown .setup-only { display: none; }
+    .is-countdown #class-context-bar { display: none; }
+    .is-class-mode .exam-only { display: none !important; }
+    .time-only .countdown-board { grid-template-columns: 1fr; }
+    .time-only .board-left,
+    .time-only .next-label,
+    .time-only .next-subject,
+    .time-only .note-board { display: none !important; }
+    .time-only .board-main { min-height: calc(100dvh - 150px); }
+    .time-only .digital-time { font-size: clamp(5rem, 20cqw, 13rem); }
+    .time-only .timer-huge { font-size: clamp(4rem, 20cqw, 12rem); }
+    .class-time-mode .exam-page { width: min(1400px, calc(100vw - 28px)); }
+    .class-time-mode .countdown-board {
+      min-height: calc(100dvh - 28px);
+      grid-template-columns: 1fr;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(255,255,255,0.84), rgba(255,255,255,0.28) 44%, rgba(46,117,108,0.1)),
+        conic-gradient(from 180deg at 50% 50%, rgba(46,117,108,0.16), transparent 18%, rgba(199,131,75,0.18), transparent 52%, rgba(46,117,108,0.14), transparent 78%),
+        rgba(255,255,255,0.22);
+    }
+    .class-time-mode .board-left,
+    .class-time-mode .attendance-capsule,
+    .class-time-mode .next-label,
+    .class-time-mode .next-subject,
+    .class-time-mode .timer-huge,
+    .class-time-mode .note-board { display: none !important; }
+    .class-time-mode .board-main {
+      width: min(1180px, 100%);
+      min-height: calc(100dvh - 72px);
+      padding: clamp(22px, 5vw, 70px);
+      justify-content: center;
+      gap: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.88), rgba(255,255,255,0.46)),
+        radial-gradient(circle at 18% 18%, rgba(199,131,75,0.18), transparent 34%),
+        radial-gradient(circle at 88% 82%, rgba(46,117,108,0.16), transparent 34%);
+      overflow: hidden;
+    }
+    .class-time-mode .clock-cluster {
+      width: min(980px, 100%);
+      aspect-ratio: 2.18 / 1;
+      min-height: min(560px, calc(100dvh - 150px));
+      padding: clamp(22px, 6cqw, 72px);
+      border-radius: clamp(28px, 5cqw, 58px);
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: clamp(10px, 2cqw, 22px);
+      position: relative;
+      isolation: isolate;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.22)),
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.72), rgba(255,255,255,0.18) 54%, transparent 55%);
+      border: 1px solid rgba(255,255,255,0.78);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.72),
+        0 34px 110px rgba(46,117,108,0.18),
+        0 16px 50px rgba(70,49,35,0.12);
+    }
+    .class-time-mode .clock-cluster::before,
+    .class-time-mode .clock-cluster::after {
+      content: "";
+      position: absolute;
+      inset: clamp(16px, 3cqw, 40px);
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .class-time-mode .clock-cluster::before {
+      border: 1px solid rgba(46,117,108,0.18);
+      box-shadow: inset 0 0 0 16px rgba(255,255,255,0.13);
+      animation: classTimeBreathe 5.5s ease-in-out infinite;
+    }
+    .class-time-mode .clock-cluster::after {
+      inset: clamp(34px, 6cqw, 86px);
+      border: 1px dashed rgba(199,131,75,0.34);
+      opacity: 0.62;
+      animation: classTimeOrbit 28s linear infinite;
+    }
+    .class-time-mode .class-time-kicker,
+    .class-time-mode .class-time-date {
+      display: block;
+    }
+    .class-time-kicker,
+    .class-time-date {
+      display: none;
+      color: var(--cm-muted);
+      font-weight: 900;
+      letter-spacing: 0;
+      text-align: center;
+    }
+    .class-time-kicker {
+      padding: 7px 13px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.62);
+      border: 1px solid rgba(255,255,255,0.72);
+      color: var(--cm-accent);
+      font-size: clamp(0.78rem, 2.2cqw, 1rem);
+    }
+    .class-time-date {
+      font-size: clamp(1rem, 3.4cqw, 1.7rem);
+    }
+    .class-time-mode .digital-time {
+      width: 100%;
+      font-size: clamp(4.6rem, 21cqw, 15rem);
+      color: var(--cm-accent);
+      text-shadow: 0 24px 70px rgba(46,117,108,0.18);
+      animation: examTimePulse 4s ease-in-out infinite;
+    }
+    .class-time-mode .digital-time::after {
+      content: "";
+      display: block;
+      width: min(520px, 58%);
+      height: 6px;
+      margin: clamp(14px, 3cqw, 28px) auto 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(46,117,108,0.5), rgba(199,131,75,0.38), transparent);
+    }
+    .setup-screen, .countdown-screen { display: none; }
+    .setup-screen.active, .countdown-screen.active { display: block; animation: cmFloatIn 0.45s var(--cm-motion) both; }
+    .class-time-mode .mode-actions {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      opacity: 0.14;
+      transition: opacity 0.2s ease;
+    }
+    .class-time-mode .mode-actions:hover,
+    .class-time-mode .mode-actions:focus-within { opacity: 1; }
+    @keyframes examCardIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes examBoardIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes examGlassSweep {
+      0%, 58% { transform: translateX(-110%); opacity: 0; }
+      66% { opacity: 1; }
+      86%, 100% { transform: translateX(110%); opacity: 0; }
+    }
+    @keyframes examTimePulse {
+      0%, 100% { transform: translateY(0); text-shadow: 0 24px 70px rgba(46,117,108,0.18); }
+      50% { transform: translateY(-3px); text-shadow: 0 30px 86px rgba(46,117,108,0.25); }
+    }
+    @keyframes classTimeBreathe {
+      0%, 100% { transform: scale(1); opacity: 0.68; }
+      50% { transform: scale(0.985); opacity: 1; }
+    }
+    @keyframes classTimeOrbit {
+      to { transform: rotate(360deg); }
+    }
+    @media (max-width: 980px) {
+      .exam-workspace, .exam-compose-grid, .countdown-board { grid-template-columns: 1fr; }
+      .exam-launch-panel { position: relative; top: auto; }
+      .countdown-board { min-height: auto; overflow: visible; }
+      .board-left { order: 2; }
+      .clock { display: none; }
+      .class-context-bar .cm-topbar-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 640px) {
+      .exam-page { width: calc(100vw - 14px); margin-top: 7px; }
+      .class-context-bar { padding: 12px; gap: 10px; border-radius: 18px; }
+      .class-context-bar .cm-topbar-actions { gap: 6px; }
+      .class-context-bar .cm-button { min-height: 36px; padding: 7px 10px !important; font-size: 13px; }
+      .exam-field-grid, .exam-time-row { grid-template-columns: 1fr; }
+      .mode-selector { grid-template-columns: 1fr; }
+      .schedule-item { grid-template-columns: 1fr; }
+      .schedule-clock { width: 100%; text-align: left; grid-template-columns: auto 1fr; }
+      .schedule-status { justify-self: start; }
+      .timer-huge { font-size: clamp(2.8rem, 16cqw, 5.4rem); padding: 16px; border-radius: 22px; }
+      .note-board { padding: 42px 14px 14px; max-height: 180px; }
+      .note-board::before { writing-mode: horizontal-tb; }
+      .mode-actions { position: static; margin-top: 12px; justify-content: center; }
+      .is-countdown:not(.class-time-mode) .countdown-board { min-height: calc(100dvh - 74px); }
+      .is-countdown:not(.class-time-mode) .board-left { display: none; }
+      .class-time-mode .exam-page { width: calc(100vw - 14px); }
+      .class-time-mode .countdown-board { min-height: calc(100dvh - 14px); padding: 10px; }
+      .class-time-mode .board-main { min-height: calc(100dvh - 64px); padding: 20px; }
+      .class-time-mode .clock-cluster {
+        aspect-ratio: auto;
+        min-height: calc(100dvh - 150px);
+        padding: 22px 14px;
+      }
+      .class-time-mode .digital-time { font-size: clamp(4.2rem, 19cqw, 7rem); }
+      .class-time-mode .mode-actions { position: fixed; right: 10px; bottom: 10px; }
+    }
+  </style>
+</head>
+<body class="light-mode cm-theme">
+  <div class="exam-page">
+    <header id="class-context-bar" class="class-context-bar cm-topbar"></header>
+
+    <section id="setup-screen" class="setup-screen active">
+      <div class="exam-workspace">
+        <aside class="cm-card exam-panel exam-launch-panel">
+          <div>
+            <div class="cm-eyebrow">EXAM TIMER</div>
+            <h1 class="cm-title" style="font-size: clamp(30px, 4vw, 54px);">考試計時系統</h1>
+            <p class="cm-description" id="binding-status"></p>
+          </div>
+
+          <div class="mode-selector" id="mode-selector">
+            <label class="mode-card" data-mode="exam">
+              <input type="radio" name="timer-mode" value="exam" />
+              <strong>段考模式</strong>
+              <span>考程、倒數、應到實到與小叮嚀看板。</span>
+            </label>
+            <label class="mode-card" data-mode="classTime">
+              <input type="radio" name="timer-mode" value="classTime" />
+              <strong>課堂時間模式</strong>
+              <span>只顯示中央大時鐘，適合投影與日常課堂。</span>
+            </label>
+          </div>
+
+          <div class="exam-field-grid exam-only">
+            <div class="exam-field">
+              <label for="expected-count">應到人數</label>
+              <input type="number" id="expected-count" min="0" />
+            </div>
+            <div class="exam-field">
+              <label for="actual-count">實到人數</label>
+              <input type="number" id="actual-count" min="0" />
+            </div>
+          </div>
+
+          <button id="start-mode-btn" class="cm-button cm-exam-mode" style="min-height:54px;">一鍵開啟段考模式</button>
+        </aside>
+
+        <main class="cm-card exam-panel">
+          <div class="cm-grid-4">
+            <div class="cm-card cm-stat" style="--cm-i:0"><div class="cm-stat-label">班級學生</div><div class="cm-stat-value" id="student-count">0</div></div>
+            <div class="cm-card cm-stat" style="--cm-i:1"><div class="cm-stat-label">今日考程</div><div class="cm-stat-value" id="schedule-count">0</div></div>
+            <div class="cm-card cm-stat" style="--cm-i:2"><div class="cm-stat-label">使用紀錄</div><div class="cm-stat-value" id="history-count">0</div></div>
+            <div class="cm-card cm-stat" style="--cm-i:3"><div class="cm-stat-label">狀態</div><div class="cm-stat-value" id="timer-state" style="font-size:24px;">待命</div></div>
+          </div>
+
+          <div class="exam-compose-grid exam-only">
+            <section class="cm-card exam-builder-card">
+              <div class="exam-section-head">
+                <div>
+                  <div class="cm-eyebrow">SCHEDULE SETUP</div>
+                  <h2>新增考程</h2>
+                </div>
+              </div>
+              <div class="exam-field">
+                <label for="subject-input">考試內容</label>
+                <input type="text" id="subject-input" placeholder="例如：數學第一單元" />
+              </div>
+              <div class="exam-time-row">
+                <div class="exam-field">
+                  <label>開始時間</label>
+                  <div class="exam-time-row">
+                    <select id="start-hour"></select>
+                    <select id="start-minute"></select>
+                  </div>
+                </div>
+                <div class="exam-field">
+                  <label>結束時間</label>
+                  <div class="exam-time-row">
+                    <select id="end-hour"></select>
+                    <select id="end-minute"></select>
+                  </div>
+                </div>
+              </div>
+              <div class="exam-actions">
+                <button id="add-exam-btn" class="cm-button cm-primary">新增考程</button>
+                <button id="clear-schedule-btn" class="cm-button">清空</button>
+              </div>
+            </section>
+
+            <section class="cm-card exam-note-card">
+              <div class="exam-section-head">
+                <div>
+                  <div class="cm-eyebrow">REMINDER</div>
+                  <h2>考試小叮嚀</h2>
+                </div>
+              </div>
+              <div class="exam-field">
+                <label for="exam-note">投影看板提示文字</label>
+                <textarea id="exam-note" rows="6" placeholder="例如：先寫姓名、答案卡畫記清楚、最後五分鐘檢查。"></textarea>
+              </div>
+              <div class="exam-hint">小叮嚀會在段考模式看板底部顯示，不會覆蓋考試倒數。</div>
+            </section>
+          </div>
+
+          <section class="cm-card exam-section-card exam-only">
+            <div class="exam-section-head">
+              <h2 style="margin:0;">考試時程</h2>
+              <span class="cm-pill" id="today-label"></span>
+            </div>
+            <div id="schedule-list" class="schedule-list"></div>
+          </section>
+
+          <section class="cm-card exam-section-card">
+            <div class="exam-section-head">
+              <h2 style="margin:0;">使用紀錄</h2>
+              <button id="clear-history-btn" class="cm-button">清除紀錄</button>
+            </div>
+            <div id="history-list" class="history-list"></div>
+          </section>
+        </main>
+      </div>
+    </section>
+
+    <section id="countdown-screen" class="countdown-screen">
+      <div class="cm-glass countdown-board">
+        <aside class="cm-card board-left">
+          <div class="schedule-top">
+            <div>
+              <div class="cm-eyebrow">SCHEDULE</div>
+              <h2 style="margin:4px 0 0;">今日考程</h2>
+            </div>
+            <span class="cm-pill" id="mode-date"></span>
+          </div>
+          <div id="vertical-schedule-list" class="schedule-list" style="margin-top:14px; flex:1;"></div>
+          <div class="clock" id="analog-clock">
+            <div id="clock-markers"></div>
+            <div class="hand hour" id="hour-hand"></div>
+            <div class="hand minute" id="minute-hand"></div>
+            <div class="hand second" id="second-hand"></div>
+            <div class="clock-center"></div>
+          </div>
+        </aside>
+        <main class="cm-card board-main">
+          <div class="clock-cluster">
+            <div class="class-time-kicker">CLASS TIME</div>
+            <div class="digital-time" id="digital-time">00:00:00</div>
+            <div class="class-time-date" id="class-time-date"></div>
+            <div class="attendance-capsule">
+              <span>應到 <strong id="display-expected">--</strong></span>
+              <span>實到 <strong id="display-actual">--</strong></span>
+            </div>
+          </div>
+          <div>
+            <div class="next-label" id="countdown-label">準備開始</div>
+            <div class="next-subject" id="next-subject">--</div>
+          </div>
+          <div class="timer-huge" id="countdown-timer">00:00:00</div>
+          <div class="note-board" id="note-board" style="display:none;"></div>
+        </main>
+      </div>
+      <div class="mode-actions">
+        <button id="fullscreen-btn" class="cm-button cm-primary">全螢幕</button>
+        <button id="back-setup-btn" class="cm-button">返回設定</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../class-manager-data.js?v=35"></script>
+  <script>
+    (function() {
+      const pad = n => String(n).padStart(2, "0");
+      const todayKey = () => {
+        const d = new Date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 10);
+      };
+      const displayDate = () => new Date().toLocaleDateString("zh-TW", { month: "2-digit", day: "2-digit", weekday: "short" });
+      const toMinutes = time => {
+        const parts = String(time || "00:00").split(":").map(Number);
+        return (parts[0] || 0) * 60 + (parts[1] || 0);
+      };
+      const timeToDate = time => {
+        const d = new Date();
+        const parts = String(time || "00:00").split(":").map(Number);
+        d.setHours(parts[0] || 0, parts[1] || 0, 0, 0);
+        return d;
+      };
+      const formatDuration = sec => {
+        const s = Math.max(0, Math.floor(sec || 0));
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        return h ? `${h} 小時 ${m} 分` : `${m} 分 ${s % 60} 秒`;
+      };
+      const escapeHTML = value => String(value || "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+      let activeClass = window.ClassManager ? ClassManager.getActiveClass() : null;
+      let timer = Object.assign({ mode: "exam", expectedCount: 0, actualCount: 0, note: "", timeOnly: false, schedule: [], history: [] }, activeClass ? activeClass.examTimer : null);
+      if (timer.timeOnly && timer.mode !== "classTime") timer.mode = "classTime";
+      let interval = null;
+      let activeSessionId = null;
+
+      const $ = id => document.getElementById(id);
+      const elements = {
+        context: $("class-context-bar"),
+        expected: $("expected-count"),
+        actual: $("actual-count"),
+        note: $("exam-note"),
+        modeSelector: $("mode-selector"),
+        subject: $("subject-input"),
+        startHour: $("start-hour"),
+        startMinute: $("start-minute"),
+        endHour: $("end-hour"),
+        endMinute: $("end-minute"),
+        scheduleList: $("schedule-list"),
+        verticalList: $("vertical-schedule-list"),
+        historyList: $("history-list")
+      };
+
+      function saveTimer() {
+        if (!activeClass || !window.ClassManager) return;
+        activeClass.examTimer = timer;
+        ClassManager.upsertActiveClass(activeClass);
+      }
+
+      function renderContext() {
+        if (!activeClass) {
+          elements.context.innerHTML = `<a class="cm-button" href="../index.html">← 返回班級管理</a><div><div class="cm-title">考試計時系統</div><div class="context-meta">請先從主頁選擇班級</div></div>`;
+          return;
+        }
+        const classId = encodeURIComponent(activeClass.id);
+        elements.context.innerHTML = `<a class="cm-button" href="../index.html">← 返回班級管理</a><div><div class="cm-eyebrow">考試計時</div><div class="cm-title">${activeClass.name}</div><div class="context-meta">${activeClass.students.length} 位學生 · 本機儲存</div></div><nav class="cm-topbar-actions"><a class="cm-button" href="../班級經營動力站2.0/index.html?classId=${classId}">動力站</a><a class="cm-button" href="../黑板/index.html?classId=${classId}">黑板</a><a class="cm-button" href="../座位/index.html?classId=${classId}">座位</a><a class="cm-button" href="../分組系統/index.html?classId=${classId}">分組</a><a class="cm-button cm-exam-mode" href="./index.html?classId=${classId}">考試</a></nav>`;
+      }
+
+      function populateTimeSelects() {
+        [elements.startHour, elements.endHour].forEach(select => {
+          select.innerHTML = "";
+          for (let i = 0; i < 24; i++) select.add(new Option(pad(i), pad(i)));
+        });
+        [elements.startMinute, elements.endMinute].forEach(select => {
+          select.innerHTML = "";
+          for (let i = 0; i < 60; i += 5) select.add(new Option(pad(i), pad(i)));
+        });
+        const now = new Date();
+        elements.startHour.value = pad(now.getHours());
+        elements.startMinute.value = pad(Math.ceil(now.getMinutes() / 5) * 5 % 60);
+        const end = new Date(now.getTime() + 40 * 60000);
+        elements.endHour.value = pad(end.getHours());
+        elements.endMinute.value = pad(Math.ceil(end.getMinutes() / 5) * 5 % 60);
+      }
+
+      function syncInputs() {
+        if (!activeClass) return;
+        elements.expected.value = timer.expectedCount || activeClass.students.length;
+        elements.actual.value = timer.actualCount || activeClass.students.length;
+        elements.note.value = timer.note || "";
+        $("binding-status").textContent = `名單綁定 ${activeClass.name}，預設應到人數等於班級學生數。`;
+        syncModeUI();
+      }
+
+      function syncModeUI() {
+        const mode = timer.mode === "classTime" ? "classTime" : "exam";
+        timer.mode = mode;
+        document.body.classList.toggle("is-class-mode", mode === "classTime");
+        elements.modeSelector.querySelectorAll(".mode-card").forEach(card => {
+          const isActive = card.dataset.mode === mode;
+          card.classList.toggle("is-active", isActive);
+          const input = card.querySelector("input");
+          if (input) input.checked = isActive;
+        });
+        $("start-mode-btn").textContent = mode === "classTime" ? "開啟課堂時間模式" : "一鍵開啟段考模式";
+        $("timer-state").textContent = mode === "classTime" ? "課堂時間" : ((timer.schedule || []).length ? "就緒" : "待命");
+      }
+
+      function renderSchedule(target, compact) {
+        const now = new Date();
+        target.innerHTML = "";
+        const list = (timer.schedule || []).slice().sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+        if (!list.length) {
+          target.innerHTML = `<div class="cm-empty" style="min-height:160px;"><div><h2>尚未建立考程</h2><p>新增至少一個考試內容後即可開啟考試模式。</p></div></div>`;
+          return;
+        }
+        list.forEach(item => {
+          const start = timeToDate(item.start);
+          const end = timeToDate(item.end);
+          const state = now >= end ? "past" : (now >= start && now < end ? "active" : "");
+          const duration = Math.max(0, toMinutes(item.end) - toMinutes(item.start));
+          const statusText = state === "active" ? "進行中" : (state === "past" ? "已結束" : "未開始");
+          const el = document.createElement("div");
+          el.className = `schedule-item ${state}`;
+          el.innerHTML = `
+            <div class="schedule-clock"><strong>${item.start}</strong><span>${item.end}</span></div>
+            <div class="schedule-body"><div class="schedule-subject">${escapeHTML(item.subject)}</div><div class="schedule-time">${duration} 分鐘 · ${item.start} - ${item.end}</div></div>
+            <span class="schedule-status">${statusText}</span>
+            ${compact ? "" : `<div class="schedule-delete-row"><button class="cm-button delete-exam" data-id="${item.id}">刪除</button></div>`}
+          `;
+          target.appendChild(el);
+        });
+      }
+
+      function renderHistory() {
+        const history = timer.history || [];
+        $("history-count").textContent = history.length;
+        elements.historyList.innerHTML = "";
+        if (!history.length) {
+          elements.historyList.innerHTML = `<div class="cm-empty" style="min-height:140px;"><div><h2>尚無紀錄</h2><p>開啟考試模式後會自動記錄時間與考試內容。</p></div></div>`;
+          return;
+        }
+        history.slice(0, 12).forEach(item => {
+          const el = document.createElement("div");
+          el.className = "history-item";
+          const subjects = item.mode === "classTime" || item.timeOnly ? "課堂時間" : ((item.scheduleSnapshot || []).map(s => s.subject).join("、") || "未命名考程");
+          const modeText = item.mode === "classTime" || item.timeOnly ? "課堂時間模式" : "段考模式";
+          const attendanceText = item.mode === "classTime" || item.timeOnly ? "" : ` · 應到 ${item.expectedCount} / 實到 ${item.actualCount}`;
+          el.innerHTML = `<strong>${escapeHTML(subjects)}</strong><div class="history-meta">${new Date(item.startedAt).toLocaleString("zh-TW")} · ${modeText} · ${formatDuration(item.durationSeconds)}${attendanceText}</div>${item.note ? `<div class="history-meta">小叮嚀：${escapeHTML(item.note)}</div>` : ""}`;
+          elements.historyList.appendChild(el);
+        });
+      }
+
+      function renderSetup() {
+        if (!activeClass) return;
+        timer.schedule = timer.schedule || [];
+        timer.history = timer.history || [];
+        $("student-count").textContent = activeClass.students.length;
+        $("schedule-count").textContent = timer.schedule.length;
+        $("today-label").textContent = displayDate();
+        syncModeUI();
+        renderSchedule(elements.scheduleList, false);
+        renderHistory();
+      }
+
+      function addExam() {
+        const subject = elements.subject.value.trim();
+        if (!subject) return alert("請輸入考試內容");
+        const start = `${elements.startHour.value}:${elements.startMinute.value}`;
+        const end = `${elements.endHour.value}:${elements.endMinute.value}`;
+        if (toMinutes(end) <= toMinutes(start)) return alert("結束時間需晚於開始時間");
+        timer.schedule.push({ id: `E${Date.now()}`, subject, start, end, date: todayKey() });
+        elements.subject.value = "";
+        saveTimer();
+        renderSetup();
+      }
+
+      function updateClock() {
+        const now = new Date();
+        const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+        $("digital-time").textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+        $("class-time-date").textContent = now.toLocaleDateString("zh-TW", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
+        $("second-hand").style.transform = `rotate(${s / 60 * 360 + 90}deg)`;
+        $("minute-hand").style.transform = `rotate(${m / 60 * 360 + s / 10 + 90}deg)`;
+        $("hour-hand").style.transform = `rotate(${(h % 12) / 12 * 360 + m / 2 + 90}deg)`;
+        if (timer.mode === "classTime") return;
+
+        const list = (timer.schedule || []).slice().sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+        const current = list.find(item => now >= timeToDate(item.start) && now < timeToDate(item.end));
+        const next = list.find(item => now < timeToDate(item.start));
+        let target = null;
+        if (current) {
+          $("countdown-label").textContent = "距離本節結束";
+          $("next-subject").textContent = current.subject;
+          target = timeToDate(current.end);
+        } else if (next) {
+          $("countdown-label").textContent = "距離下一節開始";
+          $("next-subject").textContent = next.subject;
+          target = timeToDate(next.start);
+        } else {
+          $("countdown-label").textContent = "今日考程";
+          $("next-subject").textContent = "全部結束";
+        }
+        if (!target) {
+          $("countdown-timer").textContent = "完成";
+        } else {
+          const diff = Math.max(0, target - now);
+          const hours = Math.floor(diff / 3600000);
+          const mins = Math.floor((diff % 3600000) / 60000);
+          const secs = Math.floor((diff % 60000) / 1000);
+          $("countdown-timer").textContent = `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+        }
+        renderSchedule(elements.verticalList, true);
+      }
+
+      function recordStart() {
+        activeSessionId = `S${Date.now()}`;
+        timer.mode = timer.mode === "classTime" ? "classTime" : "exam";
+        timer.expectedCount = Number(elements.expected.value) || activeClass.students.length;
+        timer.actualCount = Number(elements.actual.value) || timer.expectedCount;
+        timer.note = timer.mode === "classTime" ? "" : elements.note.value.trim();
+        timer.timeOnly = timer.mode === "classTime";
+        timer.history = timer.history || [];
+        timer.history.unshift({
+          id: activeSessionId,
+          classId: activeClass.id,
+          className: activeClass.name,
+          startedAt: new Date().toISOString(),
+          endedAt: null,
+          durationSeconds: 0,
+          mode: timer.mode,
+          expectedCount: timer.expectedCount,
+          actualCount: timer.actualCount,
+          note: timer.note,
+          timeOnly: timer.timeOnly,
+          scheduleSnapshot: (timer.schedule || []).map(item => Object.assign({}, item))
+        });
+        saveTimer();
+      }
+
+      function recordEnd() {
+        if (!activeSessionId) return;
+        const item = (timer.history || []).find(entry => entry.id === activeSessionId);
+        if (item && !item.endedAt) {
+          item.endedAt = new Date().toISOString();
+          item.durationSeconds = Math.round((new Date(item.endedAt) - new Date(item.startedAt)) / 1000);
+          saveTimer();
+        }
+        activeSessionId = null;
+      }
+
+      function startMode() {
+        if (!activeClass) return;
+        timer.mode = timer.mode === "classTime" ? "classTime" : "exam";
+        if (timer.mode === "exam" && (!timer.schedule || timer.schedule.length === 0)) return alert("請先新增至少一個考程");
+        recordStart();
+        $("display-expected").textContent = timer.expectedCount;
+        $("display-actual").textContent = timer.actualCount;
+        $("mode-date").textContent = displayDate();
+        $("note-board").textContent = timer.note || "";
+        $("note-board").style.display = timer.mode === "exam" && timer.note ? "block" : "none";
+        document.body.classList.add("is-countdown");
+        document.body.classList.toggle("time-only", false);
+        document.body.classList.toggle("class-time-mode", timer.mode === "classTime");
+        $("setup-screen").classList.remove("active");
+        $("countdown-screen").classList.add("active");
+        window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+        updateClock();
+        clearInterval(interval);
+        interval = setInterval(updateClock, 1000);
+      }
+
+      function backSetup() {
+        recordEnd();
+        clearInterval(interval);
+        document.body.classList.remove("is-countdown");
+        document.body.classList.remove("time-only");
+        document.body.classList.remove("class-time-mode");
+        $("countdown-screen").classList.remove("active");
+        $("setup-screen").classList.add("active");
+        window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+        renderSetup();
+        if (document.fullscreenElement) document.exitFullscreen();
+      }
+
+      function initClockMarkers() {
+        const box = $("clock-markers");
+        box.innerHTML = "";
+        for (let i = 0; i < 12; i++) {
+          const marker = document.createElement("div");
+          marker.className = `marker ${i % 3 === 0 ? "thick" : ""}`;
+          marker.style.transform = `rotate(${i * 30}deg)`;
+          box.appendChild(marker);
+        }
+      }
+
+      function bindEvents() {
+        $("add-exam-btn").addEventListener("click", addExam);
+        $("clear-schedule-btn").addEventListener("click", () => {
+          if (!confirm("確定清空考程？")) return;
+          timer.schedule = [];
+          saveTimer();
+          renderSetup();
+        });
+        $("clear-history-btn").addEventListener("click", () => {
+          if (!confirm("確定清除使用紀錄？")) return;
+          timer.history = [];
+          saveTimer();
+          renderSetup();
+        });
+        elements.scheduleList.addEventListener("click", event => {
+          const btn = event.target.closest(".delete-exam");
+          if (!btn) return;
+          timer.schedule = (timer.schedule || []).filter(item => item.id !== btn.dataset.id);
+          saveTimer();
+          renderSetup();
+        });
+        elements.expected.addEventListener("input", () => { timer.expectedCount = Number(elements.expected.value) || 0; saveTimer(); });
+        elements.actual.addEventListener("input", () => { timer.actualCount = Number(elements.actual.value) || 0; saveTimer(); });
+        elements.note.addEventListener("input", () => { timer.note = elements.note.value; saveTimer(); });
+        elements.modeSelector.addEventListener("change", event => {
+          if (!event.target.matches('input[name="timer-mode"]')) return;
+          timer.mode = event.target.value === "classTime" ? "classTime" : "exam";
+          timer.timeOnly = timer.mode === "classTime";
+          saveTimer();
+          syncModeUI();
+        });
+        $("start-mode-btn").addEventListener("click", startMode);
+        $("back-setup-btn").addEventListener("click", backSetup);
+        $("fullscreen-btn").addEventListener("click", () => {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+          else document.exitFullscreen();
+        });
+        window.addEventListener("beforeunload", recordEnd);
+      }
+
+      renderContext();
+      populateTimeSelects();
+      initClockMarkers();
+      bindEvents();
+      if (activeClass) {
+        syncInputs();
+        renderSetup();
+      } else {
+        $("setup-screen").innerHTML = `<div class="cm-empty"><div><h2>尚未選擇班級</h2><p>請回到班級管理主頁選擇班級後再開啟考試計時。</p><a class="cm-button cm-primary" href="../index.html">返回主頁</a></div></div>`;
+      }
+    })();
+  </script>
+</body>
+</html>
