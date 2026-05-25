@@ -461,6 +461,16 @@
     });
     var blackboardTodoText = _bbTodo[0], setBlackboardTodoText = _bbTodo[1];
     var _hz = useState(false); var hideZhuyin = _hz[0], setHideZhuyin = _hz[1];
+    var _hcc = useState(function() {
+      return localStorage.getItem("classManager_highContrastCorrection") === "true";
+    });
+    var highContrastCorrection = _hcc[0], setHighContrastCorrection = _hcc[1];
+
+    var toggleHighContrastCorrection = function() {
+      var newVal = !highContrastCorrection;
+      setHighContrastCorrection(newVal);
+      localStorage.setItem("classManager_highContrastCorrection", newVal ? "true" : "false");
+    };
 
     var _fm = useState(0.8); var fsMult = _fm[0], setFsMult = _fm[1];
     var _ch = useState(1.55); var cellHMult = _ch[0], setCellHMult = _ch[1];
@@ -2405,9 +2415,24 @@
         var detailTotal = Math.max(1, homework.studentStatus.length);
         var detailDone = Math.round((detailCounts.completed || 0) / detailTotal * 100);
 
-        return h("div", { className: "homework-page homework-detail-page" },
+        return h("div", { className: "homework-page homework-detail-page" + (highContrastCorrection ? " high-contrast-correction" : "") },
           h("div", { className: "homework-actions-row" },
             h("button", { className: "btn", onClick: function() { setSelectedHomeworkId(null); } }, "◀ 返回作業清單"),
+            h("div", {
+              style: {
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "rgba(255, 255, 255, 0.6)",
+                padding: "6px 14px",
+                borderRadius: "14px",
+                border: "1px solid rgba(111, 78, 55, 0.12)",
+                marginRight: "auto"
+              }
+            },
+              h("span", { style: { fontWeight: "900", fontSize: "0.9em", color: "var(--manager-accent-2)" } }, "📢 訂正加強顯示"),
+              h(Toggle, { value: highContrastCorrection, onChange: toggleHighContrastCorrection })
+            ),
             h("button", {
               className: "btn danger",
               onClick: function() {
@@ -2479,7 +2504,7 @@
         );
       });
 
-      return h("div", { className: "homework-page" },
+      return h("div", { className: "homework-page" + (highContrastCorrection ? " high-contrast-correction" : "") },
         h("section", { className: "cm-card homework-hero" },
           h("div", null,
             h("div", { className: "cm-eyebrow" }, "HOMEWORK"),
@@ -2487,6 +2512,21 @@
             h("p", null, "用清單追蹤未繳交、待訂正與完成狀態。")
           ),
           h("div", { className: "homework-actions-row" },
+            h("div", {
+              style: {
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "rgba(255, 255, 255, 0.6)",
+                padding: "6px 14px",
+                borderRadius: "14px",
+                border: "1px solid rgba(111, 78, 55, 0.12)",
+                marginRight: "auto"
+              }
+            },
+              h("span", { style: { fontWeight: "900", fontSize: "0.9em", color: "var(--manager-accent-2)" } }, "📢 訂正加強顯示"),
+              h(Toggle, { value: highContrastCorrection, onChange: toggleHighContrastCorrection })
+            ),
             h("label", { className: "homework-sort-control" },
               h("span", null, "排序"),
               h("select", {
@@ -2976,7 +3016,7 @@
         ),
 
         /* 4. Interactive Task Board Modal */
-        modalTask && h("div", { className: "modal-backdrop visible" },
+        modalTask && h("div", { className: "modal-backdrop visible" + (highContrastCorrection ? " high-contrast-correction-modal" : "") },
           h("div", { className: "cm-glass modal-card task-board-modal " + (taskBoardPresenting ? "is-presenting" : "") },
             h("div", { className: "modal-header task-board-header" },
               h("div", null,

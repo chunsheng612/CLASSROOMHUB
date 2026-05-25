@@ -3884,3 +3884,223 @@ body.light-mode {
 .blackboard-bg.hide-zhuyin .bb-zhuyin-track {
   visibility: hidden;
 }
+
+/* Homework High Contrast / Vibrant Correction State styles */
+.homework-page.high-contrast-correction .s-needs_correction,
+.homework-page.high-contrast-correction .homework-student-tile.s-needs_correction,
+body.high-contrast-correction .s-needs_correction {
+  background: linear-gradient(135deg, #ff453a, #ff6b6b) !important;
+  border-color: #ff3b30 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 59, 48, 0.45), inset 0 1px 1px rgba(255,255,255,0.2) !important;
+  font-weight: 900 !important;
+  transform: scale(1.04) translateY(-1px);
+  z-index: 2;
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 4px 14px rgba(255, 59, 48, 0.45); }
+  50% { box-shadow: 0 4px 22px rgba(255, 59, 48, 0.75); }
+  100% { box-shadow: 0 4px 14px rgba(255, 59, 48, 0.45); }
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-needs_correction .homework-student-id,
+body.high-contrast-correction .homework-student-tile.s-needs_correction .homework-student-id {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-needs_correction .homework-status-pill,
+body.high-contrast-correction .homework-student-tile.s-needs_correction .homework-status-pill {
+  background: #ffffff !important;
+  color: #ff3b30 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-correction,
+body.high-contrast-correction .status-box.status-correction {
+  background: linear-gradient(135deg, #ff453a, #ff6b6b) !important;
+  border-color: #ff3b30 !important;
+  box-shadow: 0 0 10px rgba(255, 59, 48, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-correction strong,
+.homework-page.high-contrast-correction .status-box.status-correction span,
+body.high-contrast-correction .status-box.status-correction strong,
+body.high-contrast-correction .status-box.status-correction span {
+  color: #ffffff !important;
+}
+
+/* Overlay for interactive task modal is-correction */
+.high-contrast-correction-modal .student-task-btn.is-correction,
+.high-contrast-correction-modal .student-task-chip.is-correction,
+body.high-contrast-correction .student-task-btn.is-correction,
+body.high-contrast-correction .student-task-chip.is-correction {
+  background: linear-gradient(135deg, #ff453a, #ff6b6b) !important;
+  color: #ffffff !important;
+  border-color: #ff3b30 !important;
+  box-shadow: 0 4px 10px rgba(255, 59, 48, 0.5) !important;
+  font-weight: 900 !important;
+}
+
+/* --- High Contrast/Vibrant Pending (未繳交 - Orange) --- */
+.homework-page.high-contrast-correction .s-pending,
+.homework-page.high-contrast-correction .homework-student-tile.s-pending,
+body.high-contrast-correction .s-pending {
+  background: linear-gradient(135deg, #ff9500, #ffb300) !important;
+  border-color: #e08500 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 149, 0, 0.45), inset 0 1px 1px rgba(255,255,255,0.2) !important;
+  font-weight: 900 !important;
+  transform: scale(1.04) translateY(-1px);
+  z-index: 2;
+  animation: pulse-border-orange 2s infinite;
+}
+
+@keyframes pulse-border-orange {
+  0% { box-shadow: 0 4px 14px rgba(255, 149, 0, 0.45); }
+  50% { box-shadow: 0 4px 22px rgba(255, 149, 0, 0.75); }
+  100% { box-shadow: 0 4px 14px rgba(255, 149, 0, 0.45); }
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-pending .homework-student-id,
+body.high-contrast-correction .homework-student-tile.s-pending .homework-student-id {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-pending .homework-status-pill,
+body.high-contrast-correction .homework-student-tile.s-pending .homework-status-pill {
+  background: #ffffff !important;
+  color: #ff9500 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-pending,
+body.high-contrast-correction .status-box.status-pending {
+  background: linear-gradient(135deg, #ff9500, #ffb300) !important;
+  border-color: #e08500 !important;
+  box-shadow: 0 0 10px rgba(255, 149, 0, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-pending strong,
+.homework-page.high-contrast-correction .status-box.status-pending span,
+body.high-contrast-correction .status-box.status-pending strong,
+body.high-contrast-correction .status-box.status-pending span {
+  color: #ffffff !important;
+}
+
+/* --- High Contrast/Vibrant Submitted (已繳交 - Blue) --- */
+.homework-page.high-contrast-correction .s-submitted,
+.homework-page.high-contrast-correction .homework-student-tile.s-submitted,
+body.high-contrast-correction .s-submitted {
+  background: linear-gradient(135deg, #007aff, #64d2ff) !important;
+  border-color: #0066d6 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 122, 255, 0.45), inset 0 1px 1px rgba(255,255,255,0.2) !important;
+  font-weight: 900 !important;
+  transform: scale(1.04) translateY(-1px);
+  z-index: 2;
+  animation: pulse-border-blue 2s infinite;
+}
+
+@keyframes pulse-border-blue {
+  0% { box-shadow: 0 4px 14px rgba(0, 122, 255, 0.45); }
+  50% { box-shadow: 0 4px 22px rgba(0, 122, 255, 0.75); }
+  100% { box-shadow: 0 4px 14px rgba(0, 122, 255, 0.45); }
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-submitted .homework-student-id,
+body.high-contrast-correction .homework-student-tile.s-submitted .homework-student-id {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-submitted .homework-status-pill,
+body.high-contrast-correction .homework-student-tile.s-submitted .homework-status-pill {
+  background: #ffffff !important;
+  color: #007aff !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-submitted,
+body.high-contrast-correction .status-box.status-submitted {
+  background: linear-gradient(135deg, #007aff, #64d2ff) !important;
+  border-color: #0066d6 !important;
+  box-shadow: 0 0 10px rgba(0, 122, 255, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-submitted strong,
+.homework-page.high-contrast-correction .status-box.status-submitted span,
+body.high-contrast-correction .status-box.status-submitted strong,
+body.high-contrast-correction .status-box.status-submitted span {
+  color: #ffffff !important;
+}
+
+/* --- High Contrast/Vibrant Completed (已完成 - Green) --- */
+.homework-page.high-contrast-correction .s-completed,
+.homework-page.high-contrast-correction .homework-student-tile.s-completed,
+body.high-contrast-correction .s-completed {
+  background: linear-gradient(135deg, #34c759, #4cd964) !important;
+  border-color: #24b24b !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(52, 199, 89, 0.45), inset 0 1px 1px rgba(255,255,255,0.2) !important;
+  font-weight: 900 !important;
+  transform: scale(1.04) translateY(-1px);
+  z-index: 2;
+  animation: pulse-border-green 2s infinite;
+}
+
+@keyframes pulse-border-green {
+  0% { box-shadow: 0 4px 14px rgba(52, 199, 89, 0.45); }
+  50% { box-shadow: 0 4px 22px rgba(52, 199, 89, 0.75); }
+  100% { box-shadow: 0 4px 14px rgba(52, 199, 89, 0.45); }
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-completed .homework-student-id,
+body.high-contrast-correction .homework-student-tile.s-completed .homework-student-id {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.homework-page.high-contrast-correction .homework-student-tile.s-completed .homework-status-pill,
+body.high-contrast-correction .homework-student-tile.s-completed .homework-status-pill {
+  background: #ffffff !important;
+  color: #34c759 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-completed,
+body.high-contrast-correction .status-box.status-completed {
+  background: linear-gradient(135deg, #34c759, #4cd964) !important;
+  border-color: #24b24b !important;
+  box-shadow: 0 0 10px rgba(52, 199, 89, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.homework-page.high-contrast-correction .status-box.status-completed strong,
+.homework-page.high-contrast-correction .status-box.status-completed span,
+body.high-contrast-correction .status-box.status-completed strong,
+body.high-contrast-correction .status-box.status-completed span {
+  color: #ffffff !important;
+}
+
+/* --- High Contrast/Vibrant Interactive Task Board Pending (未繳交) --- */
+.high-contrast-correction-modal .student-task-btn.is-pending,
+.high-contrast-correction-modal .student-task-chip.is-pending,
+body.high-contrast-correction .student-task-btn.is-pending,
+body.high-contrast-correction .student-task-chip.is-pending {
+  background: linear-gradient(135deg, #ff9500, #ffb300) !important;
+  color: #ffffff !important;
+  border-color: #e08500 !important;
+  box-shadow: 0 4px 10px rgba(255, 149, 0, 0.5) !important;
+  font-weight: 900 !important;
+}
